@@ -10,7 +10,8 @@ const route = useRoute()
 
     <!-- Mobile Bottom Nav -->
     <nav
-      class="fixed bottom-0 left-0 w-full z-50 md:hidden flex justify-around items-center px-4 pb-6 pt-3 bg-surface/80 backdrop-blur-xl border-t border-stone-200/15 shadow-[0_-4px_24px_rgba(29,27,22,0.04)] rounded-t-2xl"
+      class="fixed bottom-0 left-0 w-full z-50 md:hidden flex justify-around items-center px-4 pt-3 bg-surface/80 backdrop-blur-xl border-t border-stone-200/15 shadow-[0_-4px_24px_rgba(29,27,22,0.04)]"
+      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0.5rem))"
     >
       <router-link
         to="/"

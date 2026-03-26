@@ -96,7 +96,7 @@ function laptopIcon(manufacturer: string): string {
   <!-- Desktop Header -->
   <header class="sticky top-0 z-50 bg-surface flex items-center justify-between px-6 md:px-8 h-16 md:h-20 font-headline tracking-tight">
     <div class="flex items-center gap-6">
-      <span class="text-xl md:text-2xl font-bold text-primary">AssetConcierge</span>
+      <span class="text-xl md:text-2xl font-bold text-primary">Asset Concierge</span>
       <nav class="hidden md:flex items-center gap-6">
         <router-link to="/" class="text-stone-600 font-medium hover:text-primary transition-colors text-sm">Scanner</router-link>
         <router-link to="/inventory" class="text-primary font-bold border-b-2 border-primary text-sm">Inventory</router-link>
