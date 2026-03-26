@@ -9,6 +9,12 @@ const router = createRouter({
       component: () => import('@/views/ScanView.vue'),
     },
     {
+      path: '/edit/:id',
+      name: 'edit',
+      component: () => import('@/views/ScanView.vue'),
+      props: true,
+    },
+    {
       path: '/inventory',
       name: 'inventory',
       component: () => import('@/views/InventoryView.vue'),

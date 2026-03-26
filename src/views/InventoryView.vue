@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { fetchInventory } from '@/lib/fetchInventory'
+import { deleteAsset } from '@/lib/deleteAsset'
 import type { Asset } from '@/types/asset'
 import dayjs from 'dayjs'
+
+const router = useRouter()
 
 const assets = ref<Asset[]>([])
 const loading = ref(true)
 const errorMsg = ref('')
 const search = ref('')
 const statusFilter = ref<string>('all')
+
+const deleteConfirmId = ref<string | null>(null)
+const deleting = ref(false)
 
 onMounted(async () => {
   try {
@@ -19,6 +26,34 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function editAsset(id: string) {
+  router.push(`/edit/${id}`)
+}
+
+function confirmDelete(id: string) {
+  deleteConfirmId.value = id
+}
+
+function cancelDelete() {
+  deleteConfirmId.value = null
+}
+
+async function handleDelete() {
+  const id = deleteConfirmId.value
+  if (!id) return
+
+  deleting.value = true
+  try {
+    await deleteAsset(id)
+    assets.value = assets.value.filter((a) => a.id !== id)
+    deleteConfirmId.value = null
+  } catch (err: unknown) {
+    errorMsg.value = err instanceof Error ? err.message : 'Failed to delete asset'
+  } finally {
+    deleting.value = false
+  }
+}
 
 const filteredAssets = computed(() => {
   let result = assets.value
@@ -122,13 +157,24 @@ function laptopIcon(manufacturer: string): string {
           <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface font-headline">Inventory</h1>
           <p class="text-tertiary-container font-body mt-1 max-w-xl text-sm md:text-base">Your organization's IT assets at a glance.</p>
         </div>
-        <router-link
-          to="/"
-          class="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-primary-container text-white py-3 px-5 rounded-lg font-bold shadow-lg shadow-primary/20 hover:translate-y-[-1px] transition-all text-sm active:scale-95"
-        >
-          <span class="material-symbols-outlined text-sm">add</span>
-          Add Asset
-        </router-link>
+        <div class="flex items-center gap-3">
+          <a
+            href="https://docs.google.com/spreadsheets/d/1ZeV0krMc_ZeH2e-iOd9ft5jMvGwNcCtu4SPYYXI0x_A/edit?gid=0#gid=0"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 bg-surface-container-high text-on-surface-variant py-3 px-5 rounded-lg font-bold hover:translate-y-[-1px] transition-all text-sm active:scale-95"
+          >
+            <span class="material-symbols-outlined text-sm">table_chart</span>
+            Edit in Sheet
+          </a>
+          <router-link
+            to="/"
+            class="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-primary-container text-white py-3 px-5 rounded-lg font-bold shadow-lg shadow-primary/20 hover:translate-y-[-1px] transition-all text-sm active:scale-95"
+          >
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Asset
+          </router-link>
+        </div>
       </header>
 
       <!-- Mobile search -->
@@ -205,6 +251,7 @@ function laptopIcon(manufacturer: string): string {
               <th class="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface-variant/70">Assigned To</th>
               <th class="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface-variant/70">Status</th>
               <th class="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface-variant/70">Date Added</th>
+              <th class="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface-variant/70 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-surface-container-high/30">
@@ -238,6 +285,24 @@ function laptopIcon(manufacturer: string): string {
                 </span>
               </td>
               <td class="px-6 py-5 text-sm text-on-surface-variant">{{ formatDate(asset.createdAt) }}</td>
+              <td class="px-6 py-5 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    class="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors"
+                    title="Edit asset"
+                    @click="editAsset(asset.id)"
+                  >
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                  </button>
+                  <button
+                    class="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
+                    title="Delete asset"
+                    @click="confirmDelete(asset.id)"
+                  >
+                    <span class="material-symbols-outlined text-lg">delete</span>
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -280,6 +345,23 @@ function laptopIcon(manufacturer: string): string {
               <span class="font-medium text-on-surface">{{ asset.assignedTo || 'Unassigned' }}</span>
             </div>
           </div>
+
+          <div class="flex items-center justify-end gap-1 pt-1 border-t border-surface-container-high/30">
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-secondary hover:bg-secondary/5 transition-colors"
+              @click="editAsset(asset.id)"
+            >
+              <span class="material-symbols-outlined text-sm">edit</span>
+              Edit
+            </button>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-error hover:bg-error/5 transition-colors"
+              @click="confirmDelete(asset.id)"
+            >
+              <span class="material-symbols-outlined text-sm">delete</span>
+              Delete
+            </button>
+          </div>
         </div>
 
         <p class="text-center text-xs text-on-surface-variant pt-2">
@@ -287,5 +369,37 @@ function laptopIcon(manufacturer: string): string {
         </p>
       </div>
     </div>
+
+    <!-- Delete confirmation modal -->
+    <Teleport to="body">
+      <div v-if="deleteConfirmId" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" @click.self="cancelDelete">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+              <span class="material-symbols-outlined text-error">warning</span>
+            </div>
+            <h3 class="font-headline font-bold text-lg text-on-surface">Delete Asset?</h3>
+          </div>
+          <p class="text-sm text-on-surface-variant">This will permanently remove the asset from inventory. This action cannot be undone.</p>
+          <div class="flex gap-3 pt-2">
+            <button
+              class="flex-1 bg-surface-container-high text-on-surface-variant py-3 rounded-xl font-bold active:scale-95 transition-transform"
+              :disabled="deleting"
+              @click="cancelDelete"
+            >
+              Cancel
+            </button>
+            <button
+              class="flex-1 bg-error text-white py-3 rounded-xl font-bold active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
+              :disabled="deleting"
+              @click="handleDelete"
+            >
+              <span v-if="deleting" class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+              {{ deleting ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </main>
 </template>

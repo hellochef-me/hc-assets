@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { parseAssetPhoto } from '@/lib/parseAssetPhoto'
 import { lookupAssetByText } from '@/lib/lookupAssetByText'
 import { saveAsset } from '@/lib/saveAsset'
 import { compressImage } from '@/lib/compressImage'
 import { fetchEmployees, type Employee } from '@/lib/fetchEmployees'
+import { fetchInventory } from '@/lib/fetchInventory'
 import type { Asset } from '@/types/asset'
 import { CONDITIONS } from '@/types/asset'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const route = useRoute()
 
 type ViewState = 'idle' | 'camera' | 'lookup' | 'scanning' | 'form' | 'submitting' | 'success'
 const state = ref<ViewState>('idle')
@@ -18,6 +20,11 @@ const scanMode = ref<'image' | 'text'>('image')
 const previewUrl = ref<string | null>(null)
 const errorMsg = ref('')
 const validationErrors = reactive<Record<string, string>>({})
+const editLoading = ref(false)
+
+const isEditMode = computed(() => route.name === 'edit' && !!route.params.id)
+const editingId = ref<string | null>(null)
+const originalCreatedAt = ref<string | null>(null)
 
 const form = reactive({
   category: 'laptop',
@@ -45,6 +52,32 @@ const assigneeDropdownOpen = ref(false)
 
 onMounted(async () => {
   employees.value = await fetchEmployees()
+
+  if (isEditMode.value) {
+    editLoading.value = true
+    try {
+      const inventory = await fetchInventory()
+      const assetId = String(route.params.id)
+      const existing = inventory.find((a) => a.id === assetId)
+      if (existing) {
+        editingId.value = existing.id
+        originalCreatedAt.value = existing.createdAt
+        Object.entries(existing).forEach(([key, value]) => {
+          if (key in form) {
+            ;(form as Record<string, string>)[key] = value
+          }
+        })
+        assigneeSearch.value = form.assignedTo
+        state.value = 'form'
+      } else {
+        errorMsg.value = 'Asset not found'
+      }
+    } catch (err: unknown) {
+      errorMsg.value = err instanceof Error ? err.message : 'Failed to load asset'
+    } finally {
+      editLoading.value = false
+    }
+  }
 })
 
 const filteredEmployees = computed(() => {
@@ -238,8 +271,8 @@ async function handleSubmit() {
     const payload: Asset = {
       ...form,
       purchaseCurrency: 'AED',
-      id: generateId(),
-      createdAt: now,
+      id: editingId.value || generateId(),
+      createdAt: originalCreatedAt.value || now,
       updatedAt: now,
     }
     await saveAsset(payload)
@@ -252,11 +285,12 @@ async function handleSubmit() {
 
 function resetForm() {
   stopCamera()
-  state.value = 'idle'
   previewUrl.value = null
   errorMsg.value = ''
   assigneeSearch.value = ''
   assigneeDropdownOpen.value = false
+  editingId.value = null
+  originalCreatedAt.value = null
   Object.keys(validationErrors).forEach((k) => delete validationErrors[k])
   Object.assign(form, {
     category: 'laptop', assetName: '', manufacturer: '', model: '',
@@ -264,6 +298,11 @@ function resetForm() {
     purchasePrice: '', purchaseCurrency: 'AED', purchaseDate: '',
     condition: 'good', assignedTo: '', status: 'in_use', notes: '',
   })
+  if (isEditMode.value) {
+    router.push('/')
+  } else {
+    state.value = 'idle'
+  }
 }
 
 function conditionLabel(c: string) {
@@ -304,11 +343,11 @@ function conditionLabel(c: string) {
   <!-- Header -->
   <header class="sticky top-0 z-50 bg-surface flex justify-between items-center w-full px-6 py-4">
     <div class="flex items-center gap-4">
-      <button v-if="state !== 'idle'" class="text-primary active:scale-95 transition-transform" @click="resetForm">
+      <button v-if="state !== 'idle' || isEditMode" class="text-primary active:scale-95 transition-transform" @click="isEditMode ? router.push('/inventory') : resetForm()">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
       <h1 class="text-xl font-bold text-primary font-headline tracking-tight">
-        {{ state === 'success' ? 'Saved!' : 'Asset Entry' }}
+        {{ state === 'success' ? (isEditMode ? 'Updated!' : 'Saved!') : (isEditMode ? 'Edit Asset' : 'Asset Entry') }}
       </h1>
     </div>
     <router-link to="/inventory" class="hidden md:flex items-center gap-2 text-sm font-semibold text-secondary hover:text-primary transition-colors">
@@ -325,8 +364,21 @@ function conditionLabel(c: string) {
       <button class="ml-auto text-error hover:underline text-xs" @click="errorMsg = ''">Dismiss</button>
     </div>
 
+    <!-- ==================== EDIT LOADING STATE ==================== -->
+    <template v-if="editLoading">
+      <section class="flex flex-col items-center justify-center py-16 space-y-6">
+        <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
+          <span class="material-symbols-outlined text-primary !text-4xl">edit_note</span>
+        </div>
+        <div class="text-center">
+          <h2 class="font-headline font-bold text-lg text-on-surface">Loading asset...</h2>
+          <p class="text-on-surface-variant text-sm mt-1">Fetching details from inventory</p>
+        </div>
+      </section>
+    </template>
+
     <!-- ==================== IDLE STATE ==================== -->
-    <template v-if="state === 'idle'">
+    <template v-if="state === 'idle' && !isEditMode && !editLoading">
       <section class="relative group">
         <div class="bg-surface-container-low rounded-xl p-6 border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center space-y-4 overflow-hidden relative">
           <div class="absolute -top-12 -right-12 w-32 h-32 bg-secondary-container/10 rounded-full blur-3xl"></div>
@@ -648,7 +700,7 @@ function conditionLabel(c: string) {
           >
             <span v-if="state === 'submitting'" class="material-symbols-outlined animate-spin">progress_activity</span>
             <span v-else class="material-symbols-outlined">save</span>
-            {{ state === 'submitting' ? 'Saving...' : 'Submit Asset' }}
+            {{ state === 'submitting' ? 'Saving...' : (isEditMode ? 'Update Asset' : 'Submit Asset') }}
           </button>
           <button
             type="button"
@@ -668,11 +720,12 @@ function conditionLabel(c: string) {
           <span class="material-symbols-outlined text-green-600 !text-4xl">check_circle</span>
         </div>
         <div>
-          <h2 class="font-headline font-bold text-2xl text-on-surface">Asset Saved!</h2>
-          <p class="text-on-surface-variant text-sm mt-2">{{ form.assetName || 'New asset' }} has been added to inventory.</p>
+          <h2 class="font-headline font-bold text-2xl text-on-surface">{{ isEditMode ? 'Asset Updated!' : 'Asset Saved!' }}</h2>
+          <p class="text-on-surface-variant text-sm mt-2">{{ form.assetName || 'Asset' }} has been {{ isEditMode ? 'updated in' : 'added to' }} inventory.</p>
         </div>
         <div class="flex gap-3 w-full max-w-sm">
           <button
+            v-if="!isEditMode"
             class="flex-1 bg-primary text-white py-3 rounded-xl font-bold active:scale-95 transition-transform"
             @click="resetForm"
           >
@@ -681,6 +734,7 @@ function conditionLabel(c: string) {
           <router-link
             to="/inventory"
             class="flex-1 bg-surface-container-high text-on-surface py-3 rounded-xl font-bold text-center active:scale-95 transition-transform"
+            :class="isEditMode ? 'bg-primary text-white' : ''"
           >
             View Inventory
           </router-link>

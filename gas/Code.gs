@@ -99,6 +99,10 @@ function doPost(e) {
     var sheet = getSheet_();
     var payload = JSON.parse(e.postData.contents);
 
+    if (payload.mode === 'delete' && payload.id) {
+      return deleteRow_(sheet, payload.id);
+    }
+
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var idCol = headers.indexOf('id');
@@ -134,6 +138,28 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({ error: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function deleteRow_(sheet, id) {
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var idCol = headers.indexOf('id');
+
+  if (idCol < 0) {
+    return ContentService.createTextOutput(JSON.stringify({ error: 'id column not found' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, id: id }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ error: 'Row not found' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
