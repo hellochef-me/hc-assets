@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Entry - Add New Laptop</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Public+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#ffa942",
+                        "on-error": "#ffffff",
+                        "tertiary": "#5f5c54",
+                        "primary-fixed": "#ffdad4",
+                        "surface-container-highest": "#e8e2d8",
+                        "outline-variant": "#e5bdb6",
+                        "surface-bright": "#fff9ef",
+                        "error": "#ba1a1a",
+                        "background": "#fff9ef",
+                        "primary-container": "#dd3119",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#900d00",
+                        "secondary-fixed-dim": "#ffb86b",
+                        "surface-container-high": "#ede7de",
+                        "on-surface-variant": "#5c403b",
+                        "surface-dim": "#dfd9d0",
+                        "on-tertiary-fixed": "#1d1b16",
+                        "surface-container-low": "#f9f3e9",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#494640",
+                        "on-primary-container": "#fffbff",
+                        "on-tertiary-container": "#fffbff",
+                        "on-background": "#1d1b16",
+                        "secondary": "#895100",
+                        "on-secondary-fixed": "#2c1700",
+                        "primary": "#b81400",
+                        "surface-variant": "#e8e2d8",
+                        "on-primary-fixed": "#3f0300",
+                        "surface": "#fff9ef",
+                        "on-secondary-container": "#6e4000",
+                        "inverse-on-surface": "#f6f0e6",
+                        "surface-container": "#f3ede4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#78746c",
+                        "surface-tint": "#bc1601",
+                        "inverse-surface": "#33302a",
+                        "tertiary-fixed": "#e8e2d8",
+                        "outline": "#916f69",
+                        "primary-fixed-dim": "#ffb4a6",
+                        "secondary-fixed": "#ffdcbc",
+                        "tertiary-fixed-dim": "#cbc6bd",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1d1b16",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#683d00",
+                        "inverse-primary": "#ffb4a6"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fff9ef;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 2px 0 0 #b81400;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 bg-[#fff9ef] dark:bg-stone-900 flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="text-[#b81400] dark:text-red-500 Active: scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-xl font-bold text-[#b81400] dark:text-red-500 font-['Plus_Jakarta_Sans'] tracking-tight">Asset Entry</h1>
+</div>
+<button class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</header>
+<main class="max-w-md mx-auto px-5 pt-4 space-y-8">
+<!-- AI Spec Scanner Section -->
+<section class="relative group">
+<div class="bg-surface-container-low rounded-xl p-6 border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center space-y-4 overflow-hidden relative">
+<!-- Decorative background elements -->
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-secondary-container/10 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-8 -left-8 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+<div class="w-16 h-16 bg-white shadow-xl rounded-2xl flex items-center justify-center text-primary mb-2 transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined !text-4xl" data-icon="center_focus_strong">center_focus_strong</span>
+</div>
+<div>
+<h2 class="font-headline font-bold text-lg text-on-surface tracking-tight">AI Spec Scanner</h2>
+<p class="text-on-surface-variant text-sm mt-1 px-4">Snap a photo of the serial tag or retail box to auto-populate hardware details.</p>
+</div>
+<div class="flex gap-3 w-full pt-2">
+<button class="flex-1 bg-white border border-outline-variant/20 py-3 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold text-secondary hover:bg-surface transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="photo_camera">photo_camera</span>
+                        Scan Tag
+                    </button>
+<button class="flex-1 bg-white border border-outline-variant/20 py-3 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold text-secondary hover:bg-surface transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="upload_file">upload_file</span>
+                        Upload
+                    </button>
+</div>
+</div>
+</section>
+<!-- Hardware Details Form -->
+<section class="space-y-6">
+<div class="flex items-center gap-2 border-l-4 border-secondary pl-3">
+<h3 class="font-headline font-bold text-xl text-on-surface">Hardware Details</h3>
+</div>
+<form class="space-y-5">
+<!-- Model Name -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Model Name</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface placeholder:text-on-surface-variant/40 font-medium" placeholder="e.g. MacBook Pro M3 14-inch" type="text"/>
+</div>
+<!-- Serial Number -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Serial Number</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface placeholder:text-on-surface-variant/40 font-medium pr-12" placeholder="SN-XXXX-XXXX" type="text"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/50" data-icon="barcode_scanner">barcode_scanner</span>
+</div>
+</div>
+<!-- Specs Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Processor</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium appearance-none">
+<option>Intel Core i7</option>
+<option>Apple M3 Max</option>
+<option>AMD Ryzen 9</option>
+<option>Other</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">RAM</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium appearance-none">
+<option>8 GB</option>
+<option>16 GB</option>
+<option>32 GB</option>
+<option>64 GB</option>
+</select>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Storage Capacity</label>
+<div class="flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-secondary-container text-on-secondary-container font-bold text-sm" type="button">256GB</button>
+<button class="flex-1 py-2 rounded-lg bg-surface-container-highest text-on-surface-variant font-medium text-sm" type="button">512GB</button>
+<button class="flex-1 py-2 rounded-lg bg-surface-container-highest text-on-surface-variant font-medium text-sm" type="button">1TB</button>
+<button class="flex-1 py-2 rounded-lg bg-surface-container-highest text-on-surface-variant font-medium text-sm" type="button">2TB+</button>
+</div>
+</div>
+<!-- Hardware Condition -->
+<div class="space-y-3">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Hardware Condition</label>
+<div class="grid grid-cols-2 gap-3">
+<label class="relative flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm cursor-pointer border-2 border-transparent has-[:checked]:border-primary transition-all">
+<input checked="" class="hidden" name="condition" type="radio" value="new"/>
+<span class="text-sm font-semibold">New</span>
+<span class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center after:content-[''] after:w-2.5 after:after:h-2.5 after:bg-primary after:rounded-full after:scale-0 peer-checked:after:scale-100"></span>
+</label>
+<label class="relative flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm cursor-pointer border-2 border-transparent has-[:checked]:border-primary transition-all">
+<input class="hidden" name="condition" type="radio" value="good"/>
+<span class="text-sm font-semibold text-on-surface">Good</span>
+<span class="w-5 h-5 rounded-full border-2 border-outline-variant"></span>
+</label>
+<label class="relative flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm cursor-pointer border-2 border-transparent has-[:checked]:border-primary transition-all">
+<input class="hidden" name="condition" type="radio" value="fair"/>
+<span class="text-sm font-semibold text-on-surface">Fair</span>
+<span class="w-5 h-5 rounded-full border-2 border-outline-variant"></span>
+</label>
+<label class="relative flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm cursor-pointer border-2 border-transparent has-[:checked]:border-primary transition-all">
+<input class="hidden" name="condition" type="radio" value="damaged"/>
+<span class="text-sm font-semibold text-on-surface">Damaged</span>
+<span class="w-5 h-5 rounded-full border-2 border-outline-variant"></span>
+</label>
+</div>
+</div>
+<!-- Additional Notes -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Additional Notes</label>
+<textarea class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface placeholder:text-on-surface-variant/40 font-medium resize-none" placeholder="Mention any cosmetic wear or specific configuration details..." rows="4"></textarea>
+</div>
+</form>
+</section>
+<!-- Image Placeholder for Illustration -->
+<section class="rounded-2xl overflow-hidden h-40 relative group">
+<img alt="Laptop asset closeup" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Close-up aesthetic shot of a sleek modern laptop on a wooden desk with soft warm morning sunlight filtering through" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgV7H-qL7mpEJwBjXMHiQosjPFLGzSHm7-kofWNCu2oC8DT9k8-5Mnf8_KslQSXVWm5Myac-0aot_2yKn6ejE2CPPWmNeFgdj9Q-au538WmgzvfLW9X8A3V3oqrJIQXIbRkISWme7M4lR9HKx5yjRhlWfn9ahW6yvBJvR8FYl-YFB_TindTOlfLPW-O0_MHqi7IHdtkyjBMQ9hSAPKop2HJr8YcVIUILguM6e-PjzZrveZhISrcZWkgievFaqpnn7VtfgUA7nE81sb"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<p class="font-headline font-bold text-sm">Asset Catalog #8421</p>
+<p class="text-[10px] opacity-80 uppercase tracking-widest">Digital Inventory System</p>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-3 pt-4">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="save">save</span>
+                Submit Asset
+            </button>
+<button class="w-full bg-surface-container-high text-on-surface-variant py-4 rounded-xl font-bold active:scale-95 transition-transform">
+                Clear Form
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#fff9ef]/80 dark:bg-stone-900/80 backdrop-blur-xl border-t border-stone-200/15 dark:border-stone-700/15 shadow-[0_-4px_24px_rgba(29,27,22,0.04)] rounded-t-2xl">
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-[#895100] dark:hover:text-amber-500 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Publica_Sans'] text-[11px] font-medium mt-1">Inventory</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#b81400] text-white rounded-xl px-4 py-1.5 Active: scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="center_focus_strong" style="font-variation-settings: 'FILL' 1;">center_focus_strong</span>
+<span class="font-['Publica_Sans'] text-[11px] font-medium mt-1">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-[#895100] dark:hover:text-amber-500 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span class="font-['Publica_Sans'] text-[11px] font-medium mt-1">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-[#895100] dark:hover:text-amber-500 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Publica_Sans'] text-[11px] font-medium mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

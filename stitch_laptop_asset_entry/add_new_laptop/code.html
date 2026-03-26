@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetConcierge | Laptop Entry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Public+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#fff9ef",
+                        "on-tertiary-fixed-variant": "#494640",
+                        "tertiary-fixed-dim": "#cbc6bd",
+                        "secondary": "#895100",
+                        "secondary-fixed": "#ffdcbc",
+                        "on-background": "#1d1b16",
+                        "tertiary": "#5f5c54",
+                        "surface-bright": "#fff9ef",
+                        "inverse-on-surface": "#f6f0e6",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#ffb4a6",
+                        "primary-fixed": "#ffdad4",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#dfd9d0",
+                        "outline": "#916f69",
+                        "tertiary-fixed": "#e8e2d8",
+                        "on-secondary-fixed": "#2c1700",
+                        "on-secondary-fixed-variant": "#683d00",
+                        "primary-fixed-dim": "#ffb4a6",
+                        "inverse-surface": "#33302a",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#bc1601",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#900d00",
+                        "surface-variant": "#e8e2d8",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#6e4000",
+                        "primary-container": "#dd3119",
+                        "on-surface": "#1d1b16",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#f3ede4",
+                        "secondary-container": "#ffa942",
+                        "outline-variant": "#e5bdb6",
+                        "secondary-fixed-dim": "#ffb86b",
+                        "on-primary-fixed": "#3f0300",
+                        "on-tertiary-fixed": "#1d1b16",
+                        "on-primary-container": "#fffbff",
+                        "primary": "#b81400",
+                        "surface-container-highest": "#e8e2d8",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f9f3e9",
+                        "tertiary-container": "#78746c",
+                        "background": "#fff9ef",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#ede7de",
+                        "on-surface-variant": "#5c403b"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #fff9ef;
+            color: #1d1b16;
+            font-family: 'Public Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky z-50 bg-[#fff9ef] dark:bg-stone-950 shadow-none h-20 flex items-center justify-between px-8 font-['Plus_Jakarta_Sans'] tracking-tight">
+<div class="text-2xl font-bold text-[#b81400] dark:text-[#ec3c23]">AssetConcierge</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-stone-600 dark:text-stone-400 font-medium hover:text-[#b81400] transition-colors active:scale-95 duration-200" href="#">Dashboard</a>
+<a class="text-[#b81400] dark:text-[#ec3c23] font-bold border-b-2 border-[#b81400] active:scale-95 duration-200" href="#">Scanner</a>
+<a class="text-stone-600 dark:text-stone-400 font-medium hover:text-[#b81400] transition-colors active:scale-95 duration-200" href="#">Inventory</a>
+<a class="text-stone-600 dark:text-stone-400 font-medium hover:text-[#b81400] transition-colors active:scale-95 duration-200" href="#">Reports</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 text-stone-600 hover:text-[#b81400] transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-stone-600 hover:text-[#b81400] transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border-2 border-primary">
+<img alt="User profile avatar" data-alt="close-up portrait of a professional man with a friendly smile in a bright corporate setting with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAInfYEmX6hLvM2JRgSdQrehDXQn3eqOZjQwai3YiKYlB3akuKgUymtqpW9Ds0KrWdcPfGiLAnUwFXFQpMwf44epwB13otBbH6RWwKef4A2VhsfIXjcQBUhcNKKRda6nOliDfIBdhhcwtQofsMunZFBllmZo_J-sP1QIaAnWaPJL82XFU1MrqZaFJ5F4tzYmWjREWzTzM7FICBwIbcT0Ie2jDJ1J9FR3MwD3v19YWa5ZpD61X962uAa2GMFu4wWllib7937KDFQAVsk"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-[calc(100vh-5rem)] w-72 sticky left-0 bg-[#f9f3e9] dark:bg-stone-900 p-6 gap-2 no-border font-['Publica_Sans'] text-sm">
+<div class="mb-8 px-2">
+<h3 class="font-['Plus_Jakarta_Sans'] font-bold text-[#895100] text-lg">Asset Categories</h3>
+<p class="text-stone-500 text-xs mt-1">Filter by hardware type</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 p-3 bg-white dark:bg-stone-800 text-[#b81400] rounded-lg shadow-sm transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">laptop_mac</span>
+<span>All Laptops</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">laptop_mac</span>
+<span>MacBooks</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">laptop_windows</span>
+<span>Windows Workstations</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">laptop_chromebook</span>
+<span>Chromebooks</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span>Decommissioned</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 space-y-2 border-t border-stone-200 dark:border-stone-800">
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Help Center</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-stone-600 dark:text-stone-400 hover:bg-white/50 dark:hover:bg-stone-800/50 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-surface p-6 md:p-12">
+<div class="max-w-6xl mx-auto space-y-12">
+<!-- Hero Header -->
+<section>
+<h1 class="font-headline text-5xl font-extrabold tracking-tight text-on-surface mb-2">New Laptop Entry</h1>
+<p class="font-body text-lg text-on-surface-variant max-w-2xl">Use our intelligent OCR scanner to automatically detect hardware specifications or enter details manually below.</p>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Scanner Section (Bento Grid Style) -->
+<div class="lg:col-span-5 space-y-6">
+<div class="glass-panel rounded-xl p-8 border border-white/40 shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-8xl">document_scanner</span>
+</div>
+<h2 class="font-headline text-2xl font-bold mb-4 text-secondary flex items-center gap-2">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+                                AI Spec Scanner
+                            </h2>
+<p class="text-sm text-on-surface-variant mb-8">Point your camera at the device label or upload a photo of the 'About This Mac' or 'System Settings' screen.</p>
+<div class="aspect-video bg-surface-container-high rounded-lg border-2 border-dashed border-outline-variant flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-4xl text-primary">add_a_photo</span>
+<span class="font-medium text-primary">Scan Device Tag</span>
+<p class="text-xs text-stone-500">Supports JPG, PNG up to 10MB</p>
+</div>
+<div class="mt-6 flex gap-3">
+<button class="flex-1 bg-surface-container-highest text-on-surface p-3 rounded-lg flex items-center justify-center gap-2 font-medium hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">upload</span>
+                                    Upload Photo
+                                </button>
+<button class="flex-1 bg-primary text-on-primary p-3 rounded-lg flex items-center justify-center gap-2 font-medium hover:opacity-90 transition-opacity shadow-lg">
+<span class="material-symbols-outlined text-sm">camera</span>
+                                    Open Camera
+                                </button>
+</div>
+</div>
+<!-- Scan Status/Instructions -->
+<div class="bg-secondary-container/20 p-6 rounded-xl space-y-4">
+<h3 class="font-bold text-secondary text-sm uppercase tracking-widest">Scanner Tips</h3>
+<ul class="space-y-3">
+<li class="flex gap-3 text-sm text-on-secondary-container">
+<span class="material-symbols-outlined text-secondary text-lg">check_circle</span>
+                                    Ensure the serial number is clearly visible.
+                                </li>
+<li class="flex gap-3 text-sm text-on-secondary-container">
+<span class="material-symbols-outlined text-secondary text-lg">check_circle</span>
+                                    Avoid harsh glare or shadows on the screen.
+                                </li>
+</ul>
+</div>
+</div>
+<!-- Manual Entry Form -->
+<div class="lg:col-span-7 bg-surface-container-low rounded-xl p-8 lg:p-12">
+<h2 class="font-headline text-2xl font-bold mb-8 text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">edit_note</span>
+                            Hardware Details
+                        </h2>
+<form class="space-y-8">
+<!-- Basic Info -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Model Name</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary h-12 px-4 transition-all" placeholder="e.g. MacBook Pro M3 Max" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Serial Number</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary h-12 px-4 transition-all" placeholder="X-000-000-000" type="text"/>
+</div>
+</div>
+<!-- Specs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Processor (CPU)</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary h-12 px-4 transition-all appearance-none">
+<option>Apple M3 Max</option>
+<option>Intel Core i9</option>
+<option>AMD Ryzen 9</option>
+<option>Apple M2 Pro</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">RAM</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary h-12 px-4 transition-all appearance-none">
+<option>16 GB</option>
+<option>32 GB</option>
+<option>64 GB</option>
+<option>128 GB</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Storage</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary h-12 px-4 transition-all appearance-none">
+<option>512 GB SSD</option>
+<option>1 TB SSD</option>
+<option>2 TB SSD</option>
+<option>4 TB SSD</option>
+</select>
+</div>
+</div>
+<!-- Condition & Assignment -->
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Hardware Condition</label>
+<div class="flex flex-wrap gap-3">
+<label class="flex-1 min-w-[120px]">
+<input checked="" class="hidden peer" name="condition" type="radio"/>
+<div class="p-4 text-center border-2 border-transparent bg-surface-container-highest rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+<span class="font-bold text-sm">New</span>
+</div>
+</label>
+<label class="flex-1 min-w-[120px]">
+<input class="hidden peer" name="condition" type="radio"/>
+<div class="p-4 text-center border-2 border-transparent bg-surface-container-highest rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+<span class="font-bold text-sm">Good</span>
+</div>
+</label>
+<label class="flex-1 min-w-[120px]">
+<input class="hidden peer" name="condition" type="radio"/>
+<div class="p-4 text-center border-2 border-transparent bg-surface-container-highest rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+<span class="font-bold text-sm">Fair</span>
+</div>
+</label>
+<label class="flex-1 min-w-[120px]">
+<input class="hidden peer" name="condition" type="radio"/>
+<div class="p-4 text-center border-2 border-transparent bg-surface-container-highest rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+<span class="font-bold text-sm">Damaged</span>
+</div>
+</label>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Additional Notes</label>
+<textarea class="w-full bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary px-4 py-3 transition-all" placeholder="Specify any unique hardware identifiers or existing damage..." rows="3"></textarea>
+</div>
+<!-- Form Actions -->
+<div class="flex flex-col sm:flex-row gap-4 pt-6">
+<button class="flex-1 h-14 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-stone-200 transition-colors flex items-center justify-center gap-2" type="reset">
+<span class="material-symbols-outlined">restart_alt</span>
+                                    Clear Form
+                                </button>
+<button class="flex-[2] h-14 bg-gradient-to-r from-primary to-primary-container text-white font-bold rounded-lg shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined">save</span>
+                                    Submit Asset to Inventory
+                                </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Footer Stats (Subtle) -->
+<footer class="pt-12 border-t border-surface-container-high grid grid-cols-1 md:grid-cols-3 gap-8 text-on-surface-variant">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">database</span>
+</div>
+<div>
+<p class="text-xs font-bold uppercase">Database Status</p>
+<p class="font-headline font-bold text-on-surface">Cloud Encrypted</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<div>
+<p class="text-xs font-bold uppercase">AI Accuracy</p>
+<p class="font-headline font-bold text-on-surface">99.2% Precision</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<p class="text-xs font-bold uppercase">Recent Scans</p>
+<p class="font-headline font-bold text-on-surface">14 Items Today</p>
+</div>
+</div>
+</footer>
+</div>
+</main>
+</div>
+<!-- Mobile Navigation (BottomNavBar) -->
+<nav class="md:hidden sticky bottom-0 w-full bg-[#f9f3e9] dark:bg-stone-900 grid grid-cols-4 items-center h-16 px-2 z-50">
+<button class="flex flex-col items-center justify-center text-stone-600">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#b81400]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+<span class="text-[10px] font-bold">Scanner</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-600">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-medium">Assets</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-600">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</button>
+</nav>
+</body></html>
