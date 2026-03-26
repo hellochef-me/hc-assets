@@ -566,7 +566,9 @@ function conditionLabel(c: string) {
             <!-- Purchase Date -->
             <div class="space-y-1.5">
               <label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Purchase Date</label>
-              <input v-model="form.purchaseDate" type="date" class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium" />
+              <div class="overflow-hidden rounded-lg">
+                <input v-model="form.purchaseDate" type="date" class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium appearance-none text-sm" style="min-width: 0; max-width: 100%;" />
+              </div>
             </div>
 
             <!-- Assigned To (employee dropdown) -->
