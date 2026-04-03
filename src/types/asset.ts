@@ -20,7 +20,7 @@ export interface Asset {
   updatedAt: string
 }
 
-export const ASSET_CATEGORIES = ['laptop', 'monitor', 'peripheral'] as const
+export const ASSET_CATEGORIES = ['laptop', 'phone', 'monitor', 'peripheral'] as const
 export const CONDITIONS = ['new', 'good', 'fair', 'damaged'] as const
 export const STATUSES = ['in_use', 'spare', 'retired'] as const
 

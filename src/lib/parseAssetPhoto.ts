@@ -46,14 +46,15 @@ export async function parseAssetPhoto(base64Image: string): Promise<ParsedAsset>
 IMPORTANT: First read everything visible in the image. Then USE YOUR KNOWLEDGE to fill in remaining specs. For example:
 - If you see an Apple serial number, use it to determine the exact model, year, CPU, RAM, and storage configuration.
 - If you see a Dell Service Tag, infer the model line and typical specs.
+- If you see an IMEI, iPhone model number, or Samsung model code, identify the exact phone model and storage capacity when possible.
 - If you recognize a model number (e.g. A2918, ThinkPad T14s Gen 4), fill in the known default specs for that model.
 - Cross-reference manufacturer + model + serial to be as complete as possible.
 
 Return ONLY valid JSON with these fields:
 {
-  "category": "laptop" | "monitor" | "peripheral",
+  "category": "laptop" | "phone" | "monitor" | "peripheral",
   "assetName": "friendly name e.g. MacBook Pro 14-inch M3 Pro",
-  "manufacturer": "e.g. Apple, Dell, HP, Lenovo",
+  "manufacturer": "e.g. Apple, Dell, HP, Lenovo, Samsung, Google",
   "model": "exact model identifier",
   "serialNumber": "device serial number",
   "cpu": "processor description",

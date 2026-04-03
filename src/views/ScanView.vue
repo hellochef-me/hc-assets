@@ -88,6 +88,14 @@ const filteredEmployees = computed(() => {
   )
 })
 
+const customAssigneeName = computed(() => assigneeSearch.value.trim())
+
+const hasExactAssigneeMatch = computed(() => {
+  const q = customAssigneeName.value.toLowerCase()
+  if (!q) return false
+  return employees.value.some((employee) => employee.name.toLowerCase() === q)
+})
+
 function selectEmployee(name: string) {
   form.assignedTo = name
   assigneeSearch.value = name
@@ -524,6 +532,7 @@ function conditionLabel(c: string) {
               <label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Category</label>
               <select v-model="form.category" class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium">
                 <option value="laptop">Laptop</option>
+                <option value="phone">Phone</option>
                 <option value="monitor">Monitor</option>
                 <option value="peripheral">Peripheral</option>
               </select>
@@ -634,7 +643,7 @@ function conditionLabel(c: string) {
                   <input
                     v-model="assigneeSearch"
                     type="text"
-                    placeholder="Search employee..."
+                    placeholder="Search employee or enter a name..."
                     class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface placeholder:text-on-surface-variant/40 font-medium pr-10"
                     :class="validationErrors.assignedTo ? 'ring-2 ring-error' : ''"
                     @focus="assigneeDropdownOpen = true"
@@ -675,9 +684,18 @@ function conditionLabel(c: string) {
                     </div>
                   </button>
 
-                  <div v-if="filteredEmployees.length === 0" class="px-4 py-3 text-sm text-on-surface-variant text-center">
-                    No employees found
-                  </div>
+                  <button
+                    v-if="customAssigneeName && !hasExactAssigneeMatch"
+                    type="button"
+                    class="w-full text-left px-4 py-3 hover:bg-surface-container-low transition-colors flex items-center gap-3 border-t border-surface-container-high"
+                    @mousedown.prevent="selectEmployee(customAssigneeName)"
+                  >
+                    <span class="material-symbols-outlined text-secondary text-lg">person_add</span>
+                    <div class="min-w-0">
+                      <p class="text-sm font-medium text-on-surface truncate">Use "{{ customAssigneeName }}"</p>
+                      <p class="text-[10px] text-on-surface-variant truncate">Add a custom assignee not listed in employees</p>
+                    </div>
+                  </button>
                 </div>
               </div>
               <p v-if="validationErrors.assignedTo" class="text-xs text-error ml-1 mt-1">{{ validationErrors.assignedTo }}</p>

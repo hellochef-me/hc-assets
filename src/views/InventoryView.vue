@@ -119,7 +119,16 @@ function initials(name: string): string {
     .slice(0, 2)
 }
 
-function laptopIcon(manufacturer: string): string {
+function assetIcon(category: string, manufacturer: string): string {
+  switch (category.toLowerCase()) {
+    case 'phone':
+      return 'smartphone'
+    case 'monitor':
+      return 'monitor'
+    case 'peripheral':
+      return 'keyboard'
+  }
+
   const m = manufacturer.toLowerCase()
   if (m.includes('apple') || m.includes('mac')) return 'laptop_mac'
   if (m.includes('chrome')) return 'laptop_chromebook'
@@ -263,7 +272,7 @@ function laptopIcon(manufacturer: string): string {
               <td class="px-8 py-5">
                 <div class="flex items-center gap-4">
                   <div class="w-11 h-11 bg-surface-container-low rounded-lg flex items-center justify-center">
-                    <span class="material-symbols-outlined text-secondary">{{ laptopIcon(asset.manufacturer) }}</span>
+                    <span class="material-symbols-outlined text-secondary">{{ assetIcon(asset.category, asset.manufacturer) }}</span>
                   </div>
                   <div>
                     <p class="font-headline font-bold text-on-surface text-sm">{{ asset.assetName || `${asset.manufacturer} ${asset.model}` }}</p>
@@ -320,7 +329,7 @@ function laptopIcon(manufacturer: string): string {
         >
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-surface-container-low rounded-lg flex items-center justify-center">
-              <span class="material-symbols-outlined text-secondary text-xl">{{ laptopIcon(asset.manufacturer) }}</span>
+              <span class="material-symbols-outlined text-secondary text-xl">{{ assetIcon(asset.category, asset.manufacturer) }}</span>
             </div>
             <div class="flex-1 min-w-0">
               <p class="font-headline font-bold text-on-surface text-sm truncate">{{ asset.assetName || `${asset.manufacturer} ${asset.model}` }}</p>
