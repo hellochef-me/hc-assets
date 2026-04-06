@@ -1,44 +1,14 @@
-import OpenAI from 'openai'
 import { SHEET_HEADERS } from '@/types/asset'
-
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined
+import { requestParsedAsset } from '@/lib/assetAi'
 
 const FIELD_LIST = SHEET_HEADERS
   .filter((h) => !['id', 'createdAt', 'updatedAt'].includes(h))
   .join(', ')
+export type { ParsedAsset } from '@/lib/assetAi'
 
-export interface ParsedAsset {
-  category?: string
-  assetName?: string
-  manufacturer?: string
-  model?: string
-  serialNumber?: string
-  cpu?: string
-  ramGb?: string
-  diskGb?: string
-  modelYear?: string
-  purchasePrice?: string
-  purchaseCurrency?: string
-  purchaseDate?: string
-  condition?: string
-  assignedTo?: string
-  status?: string
-  notes?: string
-}
-
-export async function parseAssetPhoto(base64Image: string): Promise<ParsedAsset> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key is not configured.')
-  }
-
-  const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true,
-  })
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
+export async function parseAssetPhoto(base64Image: string) {
+  return requestParsedAsset(
+    [
       {
         role: 'system',
         content: `You are an IT asset identification expert. You extract hardware details from photos of device stickers, serial tags, About screens, BIOS screens, or retail boxes.
@@ -88,16 +58,6 @@ Available fields: ${FIELD_LIST}. Use empty string ONLY for fields you truly cann
         ],
       },
     ],
-    max_tokens: 800,
-    temperature: 0.1,
-  })
-
-  const content = response.choices[0]?.message?.content ?? '{}'
-
-  try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    return JSON.parse(jsonMatch ? jsonMatch[0] : content) as ParsedAsset
-  } catch {
-    return {}
-  }
+    800,
+  )
 }

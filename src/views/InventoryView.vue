@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchInventory } from '@/lib/fetchInventory'
 import { deleteAsset } from '@/lib/deleteAsset'
-import type { Asset } from '@/types/asset'
+import { ASSET_CATEGORIES, type Asset } from '@/types/asset'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -13,6 +13,7 @@ const loading = ref(true)
 const errorMsg = ref('')
 const search = ref('')
 const statusFilter = ref<string>('all')
+const categoryFilter = ref<string>('all')
 
 const deleteConfirmId = ref<string | null>(null)
 const deleting = ref(false)
@@ -62,6 +63,10 @@ const filteredAssets = computed(() => {
     result = result.filter((a) => a.status === statusFilter.value)
   }
 
+  if (categoryFilter.value !== 'all') {
+    result = result.filter((a) => a.category === categoryFilter.value)
+  }
+
   const q = search.value.toLowerCase().trim()
   if (q) {
     result = result.filter(
@@ -70,7 +75,8 @@ const filteredAssets = computed(() => {
         a.manufacturer.toLowerCase().includes(q) ||
         a.model.toLowerCase().includes(q) ||
         a.serialNumber.toLowerCase().includes(q) ||
-        a.assignedTo.toLowerCase().includes(q),
+        a.assignedTo.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q),
     )
   }
 
@@ -82,6 +88,19 @@ const statusCounts = computed(() => {
   for (const a of assets.value) {
     if (a.status in counts) counts[a.status as keyof typeof counts]++
   }
+  return counts
+})
+
+const categoryCounts = computed(() => {
+  const counts = Object.fromEntries(
+    [['all', assets.value.length], ...ASSET_CATEGORIES.map((category) => [category, 0])],
+  ) as Record<'all' | (typeof ASSET_CATEGORIES)[number], number>
+
+  for (const asset of assets.value) {
+    const category = asset.category.toLowerCase()
+    if (category in counts) counts[category as keyof typeof counts]++
+  }
+
   return counts
 })
 
@@ -106,6 +125,16 @@ function statusLabel(status: string): string {
     case 'spare': return 'Available'
     case 'retired': return 'Retired'
     default: return status
+  }
+}
+
+function categoryLabel(category: string): string {
+  switch (category) {
+    case 'phone': return 'Phones'
+    case 'monitor': return 'Monitors'
+    case 'peripheral': return 'Peripherals'
+    case 'laptop': return 'Laptops'
+    default: return category
   }
 }
 
@@ -152,7 +181,7 @@ function assetIcon(category: string, manufacturer: string): string {
       <input
         v-model="search"
         type="text"
-        placeholder="Search assets..."
+        placeholder="Search assets or categories..."
         class="bg-transparent border-none focus:ring-0 text-sm w-48 font-body focus:shadow-none"
       />
     </div>
@@ -193,13 +222,13 @@ function assetIcon(category: string, manufacturer: string): string {
           <input
             v-model="search"
             type="text"
-            placeholder="Search by name, serial, assignee..."
+            placeholder="Search by name, serial, assignee, category..."
             class="bg-transparent border-none focus:ring-0 text-sm w-full font-body focus:shadow-none"
           />
         </div>
       </div>
 
-      <!-- Filter pills -->
+      <!-- Status pills -->
       <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 mb-6">
         <button
           v-for="s in (['all', 'in_use', 'spare', 'retired'] as const)"
@@ -212,6 +241,22 @@ function assetIcon(category: string, manufacturer: string): string {
         >
           {{ s === 'all' ? 'All' : statusLabel(s) }}
           <span class="ml-1 opacity-70">({{ statusCounts[s] }})</span>
+        </button>
+      </div>
+
+      <!-- Category pills -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 mb-6">
+        <button
+          v-for="category in (['all', ...ASSET_CATEGORIES] as const)"
+          :key="category"
+          class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors"
+          :class="categoryFilter === category
+            ? 'bg-primary text-white'
+            : 'bg-surface-container-high text-on-surface hover:bg-primary/10'"
+          @click="categoryFilter = category"
+        >
+          {{ category === 'all' ? 'All Categories' : categoryLabel(category) }}
+          <span class="ml-1 opacity-70">({{ categoryCounts[category] }})</span>
         </button>
       </div>
 
@@ -235,13 +280,13 @@ function assetIcon(category: string, manufacturer: string): string {
           <span class="material-symbols-outlined text-on-surface-variant !text-3xl">devices</span>
         </div>
         <div>
-          <h3 class="font-headline font-bold text-lg text-on-surface">{{ search || statusFilter !== 'all' ? 'No matching assets' : 'No assets yet' }}</h3>
+          <h3 class="font-headline font-bold text-lg text-on-surface">{{ search || statusFilter !== 'all' || categoryFilter !== 'all' ? 'No matching assets' : 'No assets yet' }}</h3>
           <p class="text-on-surface-variant text-sm mt-1">
-            {{ search || statusFilter !== 'all' ? 'Try adjusting your search or filter.' : 'Scan your first device to get started.' }}
+            {{ search || statusFilter !== 'all' || categoryFilter !== 'all' ? 'Try adjusting your search or filters.' : 'Scan your first device to get started.' }}
           </p>
         </div>
         <router-link
-          v-if="!search && statusFilter === 'all'"
+          v-if="!search && statusFilter === 'all' && categoryFilter === 'all'"
           to="/"
           class="mt-2 inline-flex items-center gap-2 bg-primary text-white py-3 px-6 rounded-xl font-bold text-sm active:scale-95 transition-transform"
         >

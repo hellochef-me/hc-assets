@@ -1,21 +1,8 @@
-import OpenAI from 'openai'
-import type { ParsedAsset } from '@/lib/parseAssetPhoto'
-
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined
+import { requestParsedAsset } from '@/lib/assetAi'
+import type { ParsedAsset } from '@/lib/assetAi'
 
 export async function lookupAssetByText(query: string): Promise<ParsedAsset> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key is not configured.')
-  }
-
-  const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true,
-  })
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
+  return requestParsedAsset([
       {
         role: 'system',
         content: `You are an IT asset identification assistant. Given partial device info (serial number, model name, brand, or any combination), identify the device and return structured specs.
@@ -45,17 +32,5 @@ Use empty string for fields you cannot determine. If the serial number encodes m
         role: 'user',
         content: `Identify this device and return the JSON:\n\n${query}`,
       },
-    ],
-    max_tokens: 600,
-    temperature: 0.1,
-  })
-
-  const content = response.choices[0]?.message?.content ?? '{}'
-
-  try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    return JSON.parse(jsonMatch ? jsonMatch[0] : content) as ParsedAsset
-  } catch {
-    return {}
-  }
+  ], 600)
 }

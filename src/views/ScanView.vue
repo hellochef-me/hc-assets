@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ASSET_AI_MODEL } from '@/lib/assetAi'
 import { parseAssetPhoto } from '@/lib/parseAssetPhoto'
 import { lookupAssetByText } from '@/lib/lookupAssetByText'
 import { saveAsset } from '@/lib/saveAsset'
@@ -316,6 +317,10 @@ function resetForm() {
 function conditionLabel(c: string) {
   return c.charAt(0).toUpperCase() + c.slice(1)
 }
+
+function aiModelLabel(model: string): string {
+  return model.toUpperCase()
+}
 </script>
 
 <template>
@@ -427,7 +432,7 @@ function conditionLabel(c: string) {
         </div>
         <div>
           <p class="text-sm font-semibold text-on-surface">Search by serial or model</p>
-          <p class="text-xs text-on-surface-variant">Type what you know — GPT fills in the rest</p>
+          <p class="text-xs text-on-surface-variant">Type what you know and {{ aiModelLabel(ASSET_AI_MODEL) }} will infer the most likely device details.</p>
         </div>
         <span class="material-symbols-outlined text-on-surface-variant/40 ml-auto">chevron_right</span>
       </button>
@@ -448,7 +453,7 @@ function conditionLabel(c: string) {
         <div class="flex items-center gap-2 border-l-4 border-secondary pl-3">
           <h3 class="font-headline font-bold text-xl text-on-surface">Search Device</h3>
         </div>
-        <p class="text-on-surface-variant text-sm">Enter any combination of serial number, model name, or brand. GPT will identify the device and prefill specs.</p>
+        <p class="text-on-surface-variant text-sm">Enter any combination of serial number, model name, or brand. The app will identify the device and prefill likely specs.</p>
 
         <div class="space-y-3">
           <textarea
@@ -483,7 +488,7 @@ function conditionLabel(c: string) {
           <ul class="space-y-1.5 text-xs text-on-surface-variant">
             <li class="flex gap-2"><span class="material-symbols-outlined text-secondary text-sm">check_circle</span> Apple serials encode model, year, and config</li>
             <li class="flex gap-2"><span class="material-symbols-outlined text-secondary text-sm">check_circle</span> Include brand + model for best results</li>
-            <li class="flex gap-2"><span class="material-symbols-outlined text-secondary text-sm">check_circle</span> You can always edit after lookup</li>
+            <li class="flex gap-2"><span class="material-symbols-outlined text-secondary text-sm">check_circle</span> Inferred results can be reviewed and edited before saving</li>
           </ul>
         </div>
       </section>
@@ -497,7 +502,7 @@ function conditionLabel(c: string) {
         </div>
         <div class="text-center">
           <h2 class="font-headline font-bold text-lg text-on-surface">{{ scanMode === 'text' ? 'Looking up device...' : 'Analyzing image...' }}</h2>
-          <p class="text-on-surface-variant text-sm mt-1">{{ scanMode === 'text' ? 'GPT-4o is searching for specs' : 'GPT-4o is reading your device specs' }}</p>
+          <p class="text-on-surface-variant text-sm mt-1">{{ scanMode === 'text' ? `${aiModelLabel(ASSET_AI_MODEL)} is inferring device specs from what you entered` : `${aiModelLabel(ASSET_AI_MODEL)} is extracting device details from the image` }}</p>
         </div>
         <div class="w-48 h-1 bg-surface-container-highest rounded-full overflow-hidden">
           <div class="h-full bg-primary rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]" style="width: 60%"></div>
