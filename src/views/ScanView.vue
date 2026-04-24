@@ -123,9 +123,11 @@ function onAssigneeBlur() {
 watch(() => form.status, (newStatus) => {
   if (newStatus === 'in_use' && !form.assignedTo) {
     // keep — will validate on submit
-  } else if (newStatus === 'spare') {
+  } else if (newStatus === 'spare' || newStatus === 'retired') {
     form.assignedTo = ''
     assigneeSearch.value = ''
+    assigneeDropdownOpen.value = false
+    clearValidation('assignedTo')
   }
 })
 
@@ -269,6 +271,10 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
+function normalizeSerialNumber(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, '')
+}
+
 async function handleSubmit() {
   if (!validate()) return
 
@@ -276,6 +282,21 @@ async function handleSubmit() {
   errorMsg.value = ''
 
   try {
+    const candidateSerial = normalizeSerialNumber(form.serialNumber)
+    if (candidateSerial) {
+      const inventory = await fetchInventory()
+      const duplicate = inventory.find((asset) => {
+        if (editingId.value && asset.id === editingId.value) return false
+        return normalizeSerialNumber(asset.serialNumber) === candidateSerial
+      })
+
+      if (duplicate) {
+        errorMsg.value = `Serial number already exists for "${duplicate.assetName || `${duplicate.manufacturer} ${duplicate.model}`}".`
+        state.value = 'form'
+        return
+      }
+    }
+
     const now = dayjs().toISOString()
     const payload: Asset = {
       ...form,
@@ -363,10 +384,16 @@ function aiModelLabel(model: string): string {
         {{ state === 'success' ? (isEditMode ? 'Updated!' : 'Saved!') : (isEditMode ? 'Edit Asset' : 'Asset Entry') }}
       </h1>
     </div>
-    <router-link to="/inventory" class="hidden md:flex items-center gap-2 text-sm font-semibold text-secondary hover:text-primary transition-colors">
-      <span class="material-symbols-outlined text-lg">inventory_2</span>
-      View Inventory
-    </router-link>
+    <div class="hidden md:flex items-center gap-4">
+      <router-link to="/inventory" class="flex items-center gap-2 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-lg">inventory_2</span>
+        View Inventory
+      </router-link>
+      <router-link to="/history" class="flex items-center gap-2 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-lg">history</span>
+        History
+      </router-link>
+    </div>
   </header>
 
   <main class="max-w-2xl mx-auto px-5 pt-4 space-y-8">
@@ -623,22 +650,8 @@ function aiModelLabel(model: string): string {
               </div>
             </div>
 
-            <!-- Purchase Price (AED) -->
-            <div class="space-y-1.5">
-              <label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Purchase Price (AED)</label>
-              <input v-model="form.purchasePrice" type="text" inputmode="decimal" placeholder="0.00" class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface placeholder:text-on-surface-variant/40 font-medium" />
-            </div>
-
-            <!-- Purchase Date -->
-            <div class="space-y-1.5">
-              <label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">Purchase Date</label>
-              <div class="overflow-hidden rounded-lg">
-                <input v-model="form.purchaseDate" type="date" class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3.5 text-on-surface font-medium appearance-none text-sm" style="min-width: 0; max-width: 100%;" />
-              </div>
-            </div>
-
             <!-- Assigned To (employee dropdown) -->
-            <div class="space-y-1.5">
+            <div v-if="form.status === 'in_use'" class="space-y-1.5">
               <label class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant ml-1">
                 Assigned To
                 <span v-if="form.status === 'in_use'" class="text-error">*</span>

@@ -155,6 +155,17 @@ function normalizeParsedAsset(input: unknown): ParsedAsset {
   asset.category = normalizeCategory(asset.category, asset)
   asset.condition = normalizeCondition(asset.condition)
   asset.status = normalizeStatus(asset.status)
+  asset.cpu = asset.cpu.replace(/\s+/g, ' ').trim()
+  asset.ramGb = asset.ramGb.replace(/[^\d]/g, '')
+  asset.diskGb = asset.diskGb.replace(/[^\d]/g, '')
+
+  // If model is unknown, suppress inferred specs to avoid fabricated detail.
+  if (!asset.model) {
+    asset.cpu = ''
+    asset.ramGb = ''
+    asset.diskGb = ''
+    asset.modelYear = ''
+  }
 
   if (asset.purchasePrice && !asset.purchaseCurrency) {
     asset.purchaseCurrency = 'USD'
@@ -163,14 +174,95 @@ function normalizeParsedAsset(input: unknown): ParsedAsset {
   return asset
 }
 
-function extractResponseText(content: string | Array<{ type?: string; text?: string }> | null | undefined): string {
-  if (typeof content === 'string') return content
-  if (!content) return ''
+function mapRole(role: string | undefined): 'system' | 'user' | 'assistant' {
+  if (role === 'assistant' || role === 'system') return role
+  return 'user'
+}
 
-  return content
-    .map((part) => ('text' in part && typeof part.text === 'string' ? part.text : ''))
-    .join('')
-    .trim()
+function toResponsesInput(
+  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+): Array<{
+  role: 'system' | 'user' | 'assistant'
+  content: Array<{ type: 'input_text'; text: string } | { type: 'input_image'; image_url: string }>
+}> {
+  const items: Array<{
+    role: 'system' | 'user' | 'assistant'
+    content: Array<{ type: 'input_text'; text: string } | { type: 'input_image'; image_url: string }>
+  }> = []
+
+  for (const message of messages) {
+    const role = mapRole((message as { role?: string }).role)
+    const parts: Array<{ type: 'input_text'; text: string } | { type: 'input_image'; image_url: string }> = []
+    const content = message.content
+
+    if (typeof content === 'string') {
+      const text = content.trim()
+      if (text) parts.push({ type: 'input_text', text })
+    } else if (Array.isArray(content)) {
+      for (const rawPart of content as unknown[]) {
+        if (!rawPart || typeof rawPart !== 'object') continue
+        const part = rawPart as Record<string, unknown>
+
+        if (part.type === 'text' && typeof part.text === 'string') {
+          const text = part.text.trim()
+          if (text) parts.push({ type: 'input_text', text })
+        }
+
+        if (
+          part.type === 'image_url'
+          && typeof part.image_url === 'object'
+          && part.image_url !== null
+          && typeof (part.image_url as { url?: unknown }).url === 'string'
+        ) {
+          parts.push({
+            type: 'input_image',
+            image_url: (part.image_url as { url: string }).url,
+          })
+        }
+      }
+    }
+
+    if (parts.length > 0) items.push({ role, content: parts })
+  }
+
+  return items
+}
+
+function extractResponsesOutputText(response: unknown): string {
+  const outputText = (response as { output_text?: unknown })?.output_text
+  if (typeof outputText === 'string' && outputText.trim()) return outputText.trim()
+
+  const output = (response as { output?: unknown })?.output
+  if (!Array.isArray(output)) return ''
+
+  const chunks: string[] = []
+  for (const item of output as Array<Record<string, unknown>>) {
+    if (item.type !== 'message' || !Array.isArray(item.content)) continue
+    for (const part of item.content as Array<Record<string, unknown>>) {
+      if (typeof part.text === 'string' && part.text.trim()) chunks.push(part.text.trim())
+    }
+  }
+
+  return chunks.join('\n').trim()
+}
+
+function parseJsonResponse(content: string): unknown {
+  try {
+    return JSON.parse(content)
+  } catch {
+    // Handle fenced output or accidental wrapper text gracefully.
+    const fenced = content.replace(/^```json\s*/i, '').replace(/```$/i, '').trim()
+    try {
+      return JSON.parse(fenced)
+    } catch {
+      const start = fenced.indexOf('{')
+      const end = fenced.lastIndexOf('}')
+      if (start >= 0 && end > start) {
+        return JSON.parse(fenced.slice(start, end + 1))
+      }
+      throw new Error('Model did not return valid JSON.')
+    }
+  }
 }
 
 export async function requestParsedAsset(
@@ -178,19 +270,24 @@ export async function requestParsedAsset(
   maxTokens: number,
 ): Promise<ParsedAsset> {
   const openai = getOpenAIClient()
-  const response = await openai.chat.completions.create({
+  const response = await openai.responses.create({
     model: ASSET_AI_MODEL,
-    messages,
+    input: toResponsesInput(messages) as never,
     temperature: 0.1,
-    max_completion_tokens: maxTokens,
-    response_format: {
-      type: 'json_schema',
-      json_schema: parsedAssetSchema,
-    } as never,
-  })
+    max_output_tokens: maxTokens,
+    tools: [{ type: 'web_search', search_context_size: 'medium' }] as never,
+    text: {
+      format: {
+        type: 'json_schema',
+        name: parsedAssetSchema.name,
+        strict: parsedAssetSchema.strict,
+        schema: parsedAssetSchema.schema,
+      },
+    },
+  } as never)
 
-  const content = extractResponseText(response.choices[0]?.message?.content)
+  const content = extractResponsesOutputText(response)
   if (!content) return { ...EMPTY_PARSED_ASSET }
 
-  return normalizeParsedAsset(JSON.parse(content))
+  return normalizeParsedAsset(parseJsonResponse(content))
 }

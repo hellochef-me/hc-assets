@@ -13,12 +13,23 @@ export async function parseAssetPhoto(base64Image: string) {
         role: 'system',
         content: `You are an IT asset identification expert. You extract hardware details from photos of device stickers, serial tags, About screens, BIOS screens, or retail boxes.
 
-IMPORTANT: First read everything visible in the image. Then USE YOUR KNOWLEDGE to fill in remaining specs. For example:
-- If you see an Apple serial number, use it to determine the exact model, year, CPU, RAM, and storage configuration.
-- If you see a Dell Service Tag, infer the model line and typical specs.
-- If you see an IMEI, iPhone model number, or Samsung model code, identify the exact phone model and storage capacity when possible.
-- If you recognize a model number (e.g. A2918, ThinkPad T14s Gen 4), fill in the known default specs for that model.
-- Cross-reference manufacturer + model + serial to be as complete as possible.
+You can use web search. Use it to verify extracted identifiers and find accurate model specs.
+Prioritize source quality in this order:
+1) Manufacturer/support/spec pages
+2) Reputable device databases or major retailers
+3) Other pages only when higher-quality sources do not exist
+
+Process:
+1) Read all visible text and identifiers from the image.
+2) Extract serial/model/IMEI/service-tag/brand clues.
+3) Search the web with those clues and cross-check top sources.
+4) Fill only fields supported by clear evidence. Leave uncertain fields empty.
+
+Examples:
+- If you see an Apple serial number, use it to determine exact model/year/CPU/RAM/storage.
+- If you see a Dell Service Tag, identify the exact model and likely configuration.
+- If you see an IMEI, iPhone model number, or Samsung model code, identify the phone model and storage when confidence is high.
+- If you recognize a model number (e.g. A2918, ThinkPad T14s Gen 4), verify specs via high-quality web sources.
 
 Return ONLY valid JSON with these fields:
 {
@@ -38,7 +49,7 @@ Return ONLY valid JSON with these fields:
   "notes": "any extra details from the label not captured above"
 }
 
-Available fields: ${FIELD_LIST}. Use empty string ONLY for fields you truly cannot determine even with your knowledge. Prefer filling fields with your best informed answer over leaving them blank.`,
+Available fields: ${FIELD_LIST}. Use empty string for fields you cannot determine confidently. Do not fabricate model/cpu/ram/disk/year when the image evidence is weak or conflicting.`,
       },
       {
         role: 'user',

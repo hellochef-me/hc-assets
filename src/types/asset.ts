@@ -20,6 +20,18 @@ export interface Asset {
   updatedAt: string
 }
 
+export interface AssignmentHistoryEvent {
+  id: string
+  assetId: string
+  assetName: string
+  serialNumber: string
+  fromAssignedTo: string
+  toAssignedTo: string
+  changedAt: string
+  changedBy: string
+  source: string
+}
+
 export const ASSET_CATEGORIES = ['laptop', 'phone', 'monitor', 'peripheral'] as const
 export const CONDITIONS = ['new', 'good', 'fair', 'damaged'] as const
 export const STATUSES = ['in_use', 'spare', 'retired'] as const
