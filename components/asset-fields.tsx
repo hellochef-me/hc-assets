@@ -16,12 +16,18 @@ export function AssetFields({
   assignmentControls,
   compact = false,
   photoControls,
+  serialControls,
+  serialHelp,
+  registration = false,
 }: {
   nameRequired?: boolean;
   assigned?: boolean;
   assignmentControls?: React.ReactNode;
   compact?: boolean;
   photoControls?: React.ReactNode;
+  serialControls?: React.ReactNode;
+  serialHelp?: React.ReactNode;
+  registration?: boolean;
   asset: AssetInput;
   setAsset: (a: AssetInput) => void;
 }) {
@@ -41,7 +47,7 @@ export function AssetFields({
   );
   const identityFields = (
     <div className="field-grid">
-      {!compact && nameField}
+      {!compact && !registration && nameField}
       <Field label="Category">
         <Select
           value={asset.category}
@@ -68,25 +74,98 @@ export function AssetFields({
       </Field>
     </div>
   );
+  const conditionField = (
+    <>
+      <Field label="Condition">
+        <Select
+          value={asset.condition}
+          onChange={(e) =>
+            setAsset({
+              ...asset,
+              condition: e.target.value as AssetInput["condition"],
+              conditionChecked: false,
+            })
+          }
+        >
+          {conditions.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </Select>
+      </Field>
+      {asset.condition !== "Unknown" && (
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={asset.conditionChecked}
+            onChange={(e) => change("conditionChecked", e.target.checked)}
+          />
+          I inspected the physical condition and basic function
+        </label>
+      )}
+    </>
+  );
+  const ownershipFields = (
+    <>
+      {assignmentControls}
+      <Field
+        label="Location"
+        hint={
+          assigned
+            ? "Optional while assigned to someone."
+            : "Choose where this device is stored."
+        }
+      >
+        <Select
+          value={isStorageLocation(asset.location) ? asset.location : ""}
+          onChange={(e) => change("location", e.target.value)}
+          required={!assigned}
+        >
+          <option value="">
+            {assigned
+              ? "No storage location — with assignee"
+              : "Choose a storage location"}
+          </option>
+          {locations.map((location) => (
+            <option key={location}>{location}</option>
+          ))}
+        </Select>
+        {!isStorageLocation(asset.location) && asset.location && (
+          <small className="muted-text">
+            Previously recorded: {asset.location}. Confirm a storage location
+            before saving.
+          </small>
+        )}
+      </Field>
+    </>
+  );
   return (
     <div className="asset-fields">
       {compact && nameField}
-      <Field
-        label="Serial number"
-        hint="Read it from the label. Leave blank if missing or uncertain."
-      >
-        <input
-          value={asset.serial}
-          onChange={(e) =>
-            setAsset({ ...asset, serial: e.target.value, serialChecked: false })
+      <div className="serial-row">
+        <Field
+          label="Serial number"
+          hint={
+            asset.serial ? undefined : "Leave blank if missing or uncertain."
           }
-          placeholder="Unknown"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          maxLength={400}
-        />
-      </Field>
+        >
+          <input
+            value={asset.serial}
+            onChange={(e) =>
+              setAsset({
+                ...asset,
+                serial: e.target.value,
+                serialChecked: false,
+              })
+            }
+            placeholder="Unknown"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={400}
+          />
+        </Field>
+        {serialControls}
+      </div>
       {asset.serial && (
         <label className="check">
           <input
@@ -97,8 +176,16 @@ export function AssetFields({
           I checked this serial against the device label
         </label>
       )}
+      {serialHelp}
+      {registration && (
+        <>
+          {nameField}
+          {ownershipFields}
+        </>
+      )}
       {photoControls}
-      {compact ? (
+      {compact && conditionField}
+      {compact || registration ? (
         <details className="disclosure">
           <summary>Brand, model & category</summary>
           <div className="disclosure-content">{identityFields}</div>
@@ -107,7 +194,11 @@ export function AssetFields({
         identityFields
       )}
       <details className="disclosure">
-        <summary>Specifications, condition & accessories</summary>
+        <summary>
+          {compact
+            ? "Specifications & accessories"
+            : "Specifications, condition & accessories"}
+        </summary>
         <div className="disclosure-content">
           <Notice>
             Battery health and working condition need a manual check. Photos
@@ -136,32 +227,7 @@ export function AssetFields({
               Specifications verified on the device
             </label>
           )}
-          <Field label="Condition">
-            <Select
-              value={asset.condition}
-              onChange={(e) =>
-                setAsset({
-                  ...asset,
-                  condition: e.target.value as AssetInput["condition"],
-                  conditionChecked: false,
-                })
-              }
-            >
-              {conditions.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </Select>
-          </Field>
-          {asset.condition !== "Unknown" && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={asset.conditionChecked}
-                onChange={(e) => change("conditionChecked", e.target.checked)}
-              />
-              I inspected the physical condition and basic function
-            </label>
-          )}
+          {!compact && conditionField}
           <Field label="Accessories">
             <input
               value={asset.accessories}
@@ -171,36 +237,7 @@ export function AssetFields({
           </Field>
         </div>
       </details>
-      {assignmentControls}
-      <Field
-        label="Location"
-        hint={
-          assigned
-            ? "Storage location is optional while assigned to someone."
-            : "Unassigned equipment must be stored in Engineering Area or Locker."
-        }
-      >
-        <Select
-          value={isStorageLocation(asset.location) ? asset.location : ""}
-          onChange={(e) => change("location", e.target.value)}
-          required={!assigned}
-        >
-          <option value="">
-            {assigned
-              ? "No storage location — with assignee"
-              : "Choose a storage location"}
-          </option>
-          {locations.map((location) => (
-            <option key={location}>{location}</option>
-          ))}
-        </Select>
-        {!isStorageLocation(asset.location) && asset.location && (
-          <small className="muted-text">
-            Previously recorded: {asset.location}. Confirm a storage location
-            before saving.
-          </small>
-        )}
-      </Field>
+      {!registration && ownershipFields}
       <details className="disclosure">
         <summary>Purchase details & notes (optional)</summary>
         <div className="disclosure-content">

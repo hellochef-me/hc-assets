@@ -3289,3 +3289,443 @@ body:has(.scan-entry-page) {
     margin-bottom: 32px;
   }
 }
+/* Shared workflow shell: the same reference proportions on every step. */
+body:has(.scan-page),
+body:has(.detail-page) {
+  background: #fff;
+}
+.scan-page {
+  max-width: 508px;
+  padding: 32px 24px 48px;
+}
+.entry-step-label {
+  display: flex;
+  justify-content: space-between;
+}
+.entry-step-label > span {
+  color: var(--ink);
+}
+.scan-page .scan-heading {
+  margin: 0 0 24px;
+}
+.scan-page .scan-heading h1,
+.scan-page .scan-status h1,
+.scan-page .serial-match-screen h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  margin: 0 0 10px;
+}
+.scan-page .scan-heading p,
+.scan-page .screen-intro {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.scan-page .button:not(.camera-shutter):not(.camera-upload) {
+  min-height: 48px;
+  border-radius: 10px;
+}
+.scan-page .sticky-actions {
+  position: static;
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 20px 0 0;
+  gap: 10px;
+  margin: 0;
+  background: #fff;
+  border: 0;
+  box-shadow: none;
+}
+.scan-page .sticky-actions .button {
+  width: 100%;
+  flex: none;
+}
+.scan-page .sticky-actions .secondary {
+  background: #fff;
+}
+.scan-page .scan-restart {
+  display: block;
+  margin: 24px auto 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.scan-page .label-evidence {
+  margin: 0 0 22px;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.scan-page .label-evidence summary {
+  padding: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.scan-page .label-evidence .review-photo-strip {
+  border: 0;
+  padding: 0;
+}
+.scan-page .label-evidence .notice {
+  font-size: 13px;
+  padding: 12px;
+  margin: 12px 0;
+}
+.scan-page .review-stage form {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.scan-page .asset-fields .field-grid {
+  grid-template-columns: 1fr;
+}
+.scan-page .asset-fields > .field {
+  margin-bottom: 18px;
+}
+.scan-page .field > label {
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+.scan-page .field small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.scan-page .check {
+  font-size: 13px;
+  align-items: flex-start;
+  margin: 14px 0 22px;
+  line-height: 1.45;
+}
+.scan-page .check input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.scan-page .disclosure:not(.label-evidence) {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  margin: 16px 0;
+  background: #fff;
+}
+.scan-page .disclosure > summary {
+  padding: 15px 0;
+  font-size: 14px;
+}
+.scan-page .disclosure-content {
+  padding: 0 0 12px;
+}
+.scan-page .device-photo-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.scan-page .device-photo-card .fine-print {
+  font-size: 13px;
+}
+.scan-page .device-photo-card .photo-review-actions {
+  margin: 18px 0 0;
+}
+.device-photo-card.has-photo .photo-review-actions {
+  grid-template-columns: 1fr auto;
+}
+.device-photo-card.has-photo .photo-review-actions .quiet {
+  font-size: 13px;
+  font-weight: 400;
+}
+.thumbnail-check {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.thumbnail-check img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f3f3f1;
+  border: 1px solid var(--border);
+}
+.thumbnail-check strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.thumbnail-check small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 5px;
+  line-height: 1.45;
+}
+.scan-page .confirmation {
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+.scan-page .confirmation .confirm-asset {
+  margin: 16px 0 10px;
+  padding: 0;
+}
+.scan-page .confirmation h2 {
+  font-size: 20px;
+}
+.scan-page .confirmation-key-facts > div {
+  padding: 12px 0;
+}
+.scan-page .confirmation-key-facts dt {
+  font-size: 13px;
+}
+.scan-page .confirmation-key-facts dd {
+  font-size: 14px;
+}
+.scan-page .confirmation-extra {
+  margin-bottom: 0;
+}
+.scan-page .review-checklist {
+  padding: 0;
+}
+.scan-page .review-checklist p {
+  font-size: 13px;
+}
+.scan-page .review-checklist .notice {
+  font-size: 13px;
+}
+.scan-page .scan-status-card {
+  border-radius: 14px;
+  background: #fff;
+}
+.scan-page .lookup-serial {
+  background: #f7f7f5;
+}
+.scan-page .reading-photo {
+  max-height: 330px;
+}
+.scan-page .match-chip {
+  font-size: 13px;
+  margin: 8px 0 14px;
+  padding: 6px 10px;
+}
+.scan-page .serial-match-screen .screen-intro {
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+.scan-page .asset-identity-card {
+  padding: 14px;
+  border-radius: 14px;
+}
+.scan-page .identity-title {
+  margin: 16px 0 12px;
+}
+.scan-page .identity-title h2 {
+  font-size: 20px;
+}
+.scan-page .different-device {
+  padding-top: 18px;
+  margin-top: 22px;
+}
+.scan-page .different-device h2 {
+  font-size: 16px;
+}
+.scan-page .different-device .check {
+  font-size: 13px;
+}
+.scan-page .identity-facts > div {
+  padding: 9px 0;
+}
+.scan-page .serial-comparison {
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.scan-page .serial-comparison strong {
+  font-size: 16px;
+}
+.serial-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.asset-edit-form .serial-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+.asset-edit-form .serial-row .label-rescan {
+  padding-top: 25px;
+  max-width: 138px;
+}
+.asset-edit-form .serial-row .label-rescan > small {
+  display: none;
+}
+.asset-edit-form .serial-row .label-rescan > .button {
+  padding: 10px;
+  font-size: 13px;
+  min-height: 46px;
+}
+.asset-edit-form .device-photo-card {
+  padding: 0;
+  border: 0;
+  margin: 18px 0 24px;
+}
+.asset-edit-form .device-photo-card .asset-portrait {
+  max-height: 220px;
+}
+.asset-edit-form .thumbnail-check {
+  display: none;
+}
+.asset-edit-form .check {
+  font-size: 13px;
+  line-height: 1.45;
+  align-items: start;
+}
+.asset-edit-form .form-section-title {
+  font-size: 16px;
+  margin: 20px 0 16px;
+}
+.is-reading-label > .asset-summary,
+.is-reading-label > .form-section-title {
+  display: none;
+}
+.is-reading-label > .asset-fields {
+  display: block;
+}
+.is-reading-label .asset-fields > :not(.serial-row) {
+  display: none;
+}
+.is-reading-label .serial-row {
+  display: block;
+}
+.is-reading-label .serial-row > .field {
+  display: none;
+}
+.is-reading-label .serial-row .label-rescan {
+  max-width: none;
+  padding: 0;
+}
+.asset-edit-form .serial-row .label-rescan:has(.serial-suggestion),
+.asset-edit-form .serial-row .label-rescan:has(.notice) {
+  grid-column: 1 / -1;
+  max-width: none;
+  padding-top: 0;
+}
+.detail-page .asset-overview {
+  max-width: 1080px;
+  margin: 20px auto 28px;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.asset-overview .asset-portrait {
+  max-height: 360px;
+}
+.asset-overview .asset-portrait .device.large {
+  height: 320px;
+  aspect-ratio: auto;
+}
+.asset-overview .heading-actions {
+  margin: 18px 0;
+}
+.device {
+  min-width: 0;
+  min-height: 0;
+}
+.device img {
+  object-fit: contain;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  max-width: 100%;
+}
+.asset-portrait .device.large {
+  height: 280px;
+  aspect-ratio: auto;
+}
+.asset-portrait.without-photo .device.large {
+  height: 210px;
+}
+.camera-modal .camera-viewfinder {
+  container-type: size;
+}
+.camera-modal .camera-guides {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid #ffffff77;
+  border-radius: 6px;
+  max-height: 100%;
+}
+@media (max-width: 600px) {
+  .scan-page {
+    padding: 24px 24px 40px;
+  }
+  .scan-page .scan-heading h1,
+  .scan-page .scan-status h1,
+  .scan-page .serial-match-screen h1 {
+    font-size: 28px;
+  }
+  .scan-page .entry-progress {
+    margin-bottom: 28px;
+  }
+  .detail-page .asset-overview {
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  .asset-overview .asset-portrait .device.large {
+    height: 260px;
+  }
+  .asset-edit-form .device-photo-card.has-photo .photo-review-actions {
+    grid-template-columns: 1fr;
+  }
+}
+.scan-page .asset-fields .label-evidence {
+  margin: 0 0 18px;
+}
+.scan-page .asset-fields .label-evidence summary {
+  font-weight: 400;
+  font-size: 12px;
+  padding-bottom: 12px;
+}
+.scan-page .asset-fields .check {
+  margin: 8px 0 14px;
+}
+.movement-kind {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 18px;
+}
+.movement-kind summary {
+  cursor: pointer;
+}
+.movement-kind .field {
+  margin-top: 14px;
+}
+.movement-form .owner-direction {
+  margin: 12px auto;
+  width: 18px;
+  height: 18px;
+}
+.movement-form .asset-summary {
+  margin-bottom: 18px;
+}
+.movement-form .current-owner > div {
+  padding: 14px;
+}
+.movement-form .record-kept {
+  padding: 12px;
+  margin: 16px 0;
+}
+.movement-form .record-kept p {
+  font-size: 13px;
+  margin: 0;
+}
+.movement-form .field {
+  margin-bottom: 16px;
+}
+.page.detail-page {
+  max-width: 1160px;
+}

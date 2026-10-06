@@ -46,7 +46,7 @@ for (const width of [390, 1280])
       buffer: await image("#555", "SERIAL TEST-123"),
     });
     await expect(
-      page.getByRole("heading", { name: "Review the label." }),
+      page.getByRole("heading", { name: "Check the device" }),
     ).toBeVisible();
     expect(
       await page.evaluate(
@@ -66,12 +66,24 @@ for (const width of [390, 1280])
     await expect(
       card.getByText("No device photo yet.", { exact: false }),
     ).toBeVisible();
+    await page.screenshot({
+      path: `docs/screenshots/device-photo-empty-${width}.png`,
+      fullPage: true,
+    });
     await page.getByLabel("Upload device thumbnail").setInputFiles({
       name: "fictional-device.png",
       mimeType: "image/png",
       buffer: await image("#17634F", "DEVICE PHOTO"),
     });
     await expect(card.locator(".device img")).toBeVisible();
+    await expect(card.locator(".device img")).toHaveCSS(
+      "object-fit",
+      "contain",
+    );
+    await expect(card.getByAltText("Inventory thumbnail preview")).toHaveCSS(
+      "object-fit",
+      "contain",
+    );
     const draft = await page.evaluate(
       () =>
         JSON.parse(sessionStorage.getItem("hcassets.demo.registration.v2")!)
@@ -153,6 +165,17 @@ test("adding a device photo while editing does not submit until Save changes, an
   await expect(
     page.getByRole("button", { name: "Capture photo", exact: true }),
   ).toBeVisible();
+  const guide = await camera.locator(".camera-guides").boundingBox();
+  const sensor = await camera
+    .locator("video")
+    .evaluate((v: HTMLVideoElement) => ({
+      width: v.videoWidth,
+      height: v.videoHeight,
+    }));
+  expect(guide!.width / guide!.height).toBeCloseTo(
+    sensor.width / sensor.height,
+    2,
+  );
   const bounds = await camera.boundingBox();
   expect(bounds).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
   await expect(camera.getByRole("button")).toHaveCount(3);

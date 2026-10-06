@@ -112,7 +112,7 @@ test("distinct-device override is explicit and resets when starting a new scan",
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Ready to register." }),
+    page.getByRole("heading", { name: "Confirm & save" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Start a new scan" }).click();
   await page.getByRole("button", { name: /Enter manually/ }).click();

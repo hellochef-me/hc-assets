@@ -23,7 +23,8 @@ export function CameraCapture({
       "starting",
     ),
     [error, setError] = useState(""),
-    [photo, setPhoto] = useState("");
+    [photo, setPhoto] = useState(""),
+    [frameRatio, setFrameRatio] = useState(16 / 9);
   function stop() {
     generation.current++;
     stream.current?.getTracks().forEach((track) => track.stop());
@@ -74,6 +75,8 @@ export function CameraCapture({
           { once: true },
         ),
       );
+      if (video.current.videoWidth && video.current.videoHeight)
+        setFrameRatio(video.current.videoWidth / video.current.videoHeight);
       setState("ready");
     } catch (e) {
       if (token !== generation.current) return;
@@ -220,7 +223,14 @@ export function CameraCapture({
             </p>
           )}
           {state === "ready" && (
-            <span className="camera-guides" aria-hidden="true" />
+            <span
+              className="camera-guides"
+              aria-hidden="true"
+              style={{
+                aspectRatio: frameRatio,
+                width: `min(100cqw, calc(100cqh * ${frameRatio}))`,
+              }}
+            />
           )}
           {error && (
             <div className="camera-error">

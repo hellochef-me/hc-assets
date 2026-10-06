@@ -103,7 +103,7 @@ test("OCR and lookup each have a dedicated state; no form or persistence while r
   });
   releaseLookup();
   await expect(
-    page.getByRole("heading", { name: "Review the label." }),
+    page.getByRole("heading", { name: "Check the device" }),
   ).toBeVisible();
   await expect(page.getByLabel("Serial number", { exact: true })).toHaveValue(
     "DEMO-READ-42",
@@ -138,7 +138,7 @@ test("cancel OCR keeps manual fields and ignores the late response", async ({
     "MANUAL-123456",
   );
   await expect(
-    page.getByRole("heading", { name: "Review the label." }),
+    page.getByRole("heading", { name: "Check the device" }),
   ).toBeVisible();
 });
 test("unreadable label offers retry or manual entry without losing usable extracted details", async ({

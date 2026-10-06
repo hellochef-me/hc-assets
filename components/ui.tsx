@@ -204,7 +204,14 @@ export function Dialog({
   const titleId = useId();
   useEffect(() => {
     const d = ref.current;
-    if (open && !d?.open) d?.showModal();
+    if (open && d && !d.open) {
+      d.showModal();
+      d.querySelector<HTMLButtonElement>(".dialog-header button")?.focus({
+        preventScroll: true,
+      });
+      d.scrollTop = 0;
+      d.querySelector("form")?.scrollTo(0, 0);
+    }
     if (!open && d?.open) d.close();
   }, [open]);
   return (

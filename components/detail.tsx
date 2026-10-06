@@ -533,19 +533,26 @@ export function Detail({ id }: { id: string }) {
               </div>
             ) : (
               <>
-                <LabelRescan
-                  enabled={Boolean(source?.ocrEnabled ?? source?.aiEnabled)}
-                  onBusy={setReadingLabel}
-                  onSerial={(serial) =>
-                    setDraft((current) =>
-                      current
-                        ? { ...current, serial, serialChecked: false }
-                        : current,
-                    )
-                  }
-                />
                 <h3 className="form-section-title">Device details</h3>
                 <AssetFields
+                  serialControls={
+                    <>
+                      {" "}
+                      <LabelRescan
+                        enabled={Boolean(
+                          source?.ocrEnabled ?? source?.aiEnabled,
+                        )}
+                        onBusy={setReadingLabel}
+                        onSerial={(serial) =>
+                          setDraft((current) =>
+                            current
+                              ? { ...current, serial, serialChecked: false }
+                              : current,
+                          )
+                        }
+                      />
+                    </>
+                  }
                   compact
                   photoControls={
                     <DevicePhoto

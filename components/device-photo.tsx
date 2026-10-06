@@ -85,6 +85,15 @@ export function DevicePhoto({
         <p>Show the whole device clearly. This photo appears in inventory.</p>
       </div>
       <AssetPortrait asset={asset} />
+      {thumbnailPhoto(asset) && (
+        <div className="thumbnail-check">
+          <img src={thumbnailPhoto(asset)!} alt="Inventory thumbnail preview" />
+          <div>
+            <strong>Inventory thumbnail</strong>
+            <small>The whole photo is shown without cropping.</small>
+          </div>
+        </div>
+      )}
       {camera ? (
         <CameraCapture
           purpose="device"

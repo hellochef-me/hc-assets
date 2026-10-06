@@ -498,48 +498,25 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           <ArrowLeft />
           Inventory
         </Link>
-        {!entry && (
-          <span className="demo-badge">
-            {source?.kind === "demo"
-              ? "Demo registration"
-              : source?.readOnly
-                ? "Read-only lookup"
-                : source?.kind === "staging"
-                  ? "Staging registration"
-                  : "Asset registration"}
-          </span>
-        )}
       </div>
-      {entry && <p className="entry-step-label">Step 1 of 4</p>}
-      <ol
-        className={entry ? "entry-progress" : "steps"}
-        aria-label="Registration progress"
-      >
+      <p className="entry-step-label">
+        Step {progressStep + 1} of 4{" "}
+        <span>
+          {["Label", "Details", "Device photo", "Confirm"][progressStep]}
+        </span>
+      </p>
+      <ol className="entry-progress" aria-label="Registration progress">
         {["Label", "Details", "Device photo", "Confirm"].map((s, i) => (
           <li
             key={s}
             className={progressStep >= i ? "complete" : ""}
             aria-current={progressStep === i ? "step" : undefined}
           >
-            <span>{progressStep > i ? <Check /> : i + 1}</span>
+            <span>{i + 1}</span>
             {s}
           </li>
         ))}
       </ol>
-      {step > 0 &&
-        !recognizing &&
-        !checking &&
-        !readIssue &&
-        !matches.length &&
-        !(possibleMatches.length > 0 && step === 1 && !matchDismissed) && (
-          <Button
-            variant="quiet"
-            disabled={saving || checking}
-            onClick={startFresh}
-          >
-            Start a new scan
-          </Button>
-        )}
       {draftWarning && <Notice warning>{draftWarning}</Notice>}
       {error && (
         <Notice warning>
@@ -689,77 +666,86 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       ) : step === 1 ? (
         <section className="review-stage" key="review">
           <div className="scan-heading">
-            <h1>Review the label.</h1>
-            <p>You check the details. Unknowns can stay unknown.</p>
+            <h1>Check the device</h1>
+            <p>Check the serial, then choose who uses the device.</p>
           </div>
-          <div className="review-photo-strip">
-            {labelPhotos.length ? (
-              labelPhotos.map((p, i) => (
-                <div key={p}>
-                  <img src={p} alt={`Asset photo ${i + 1}`} />
-                  <button
-                    aria-label={`Remove photo ${i + 1}`}
-                    onClick={() =>
-                      setLabelPhotos((photos) =>
-                        photos.filter((_, index) => index !== i),
-                      )
-                    }
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <span>
-                <FileText />
-                No label photo retained
-              </span>
-            )}
-          </div>
-          <Notice>
-            {recognizing
-              ? "Reading label with the server provider… Your edits will be preserved."
-              : recognitionNotice ||
-                "Check the serial against the device. Label photos are temporary and are not saved with the asset."}
-            {recognizing && (
-              <Button variant="quiet" onClick={cancelRecognition}>
-                Cancel recognition
-              </Button>
-            )}
-          </Notice>
-          {!!labelPhotos.length && (
-            <div className="photo-review-actions">
-              <Button
-                variant="secondary"
-                disabled={recognizing || !ocrEnabled || !labelPhotos.length}
-                onClick={() => void readLabel(labelPhotos)}
-              >
-                Read label
-              </Button>
-              <Button
-                variant="quiet"
-                onClick={() => {
-                  cancelRecognition();
-                  setStep(0);
-                  setCameraOpen(true);
-                }}
-              >
-                Add or retake photo
-              </Button>
-            </div>
-          )}
-
           <form onSubmit={continueReview} noValidate>
             <AssetFields
+              registration
+              serialHelp={
+                <>
+                  {" "}
+                  <details className="disclosure label-evidence">
+                    <summary>
+                      {labelPhotos.length
+                        ? "Label photo & reading"
+                        : "No label photo retained"}
+                    </summary>
+                    <div className="disclosure-content">
+                      {" "}
+                      <div className="review-photo-strip">
+                        {labelPhotos.length
+                          ? labelPhotos.map((p, i) => (
+                              <div key={p}>
+                                <img src={p} alt={`Asset photo ${i + 1}`} />
+                                <button
+                                  aria-label={`Remove photo ${i + 1}`}
+                                  onClick={() =>
+                                    setLabelPhotos((photos) =>
+                                      photos.filter((_, index) => index !== i),
+                                    )
+                                  }
+                                >
+                                  <Trash2 />
+                                </button>
+                              </div>
+                            ))
+                          : null}
+                      </div>
+                      <Notice>
+                        {recognizing
+                          ? "Reading label with the server provider… Your edits will be preserved."
+                          : recognitionNotice ||
+                            "Check the serial against the device. Label photos are temporary and are not saved with the asset."}
+                        {recognizing && (
+                          <Button variant="quiet" onClick={cancelRecognition}>
+                            Cancel recognition
+                          </Button>
+                        )}
+                      </Notice>
+                      {!!labelPhotos.length && (
+                        <div className="photo-review-actions">
+                          <Button
+                            variant="secondary"
+                            disabled={
+                              recognizing || !ocrEnabled || !labelPhotos.length
+                            }
+                            onClick={() => void readLabel(labelPhotos)}
+                          >
+                            Read label
+                          </Button>
+                          <Button
+                            variant="quiet"
+                            onClick={() => {
+                              cancelRecognition();
+                              setStep(0);
+                              setCameraOpen(true);
+                            }}
+                          >
+                            Add or retake photo
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                </>
+              }
               asset={asset}
               setAsset={changeAsset}
               assigned={Boolean(assignee)}
               nameRequired={false}
               assignmentControls={
-                <Field
-                  label="Assign to"
-                  hint="Choose the person using this device, or leave it unassigned in storage."
-                >
+                <Field label="Assign to" hint="Leave unassigned for storage.">
                   <Select
                     value={assignee}
                     onChange={(e) => setAssignee(e.target.value)}
@@ -807,10 +793,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       ) : step === 2 ? (
         <section className="device-photo-stage" key="device-photo">
           <div className="scan-heading">
-            <h1>Add a device photo.</h1>
+            <h1>Add a device photo</h1>
             <p>
-              A clear photo of the whole device becomes its inventory thumbnail.
-              The label photo is for reading only.
+              Take a clear photo of the whole device. This appears in inventory.
             </p>
           </div>
           <DevicePhoto
@@ -833,7 +818,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 : "Skip for now"}
             </Button>
             <Button
-              variant="secondary"
+              variant="quiet"
               disabled={preparing}
               onClick={() => setStep(1)}
             >
@@ -844,8 +829,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       ) : (
         <section className="confirm-stage" key="confirm">
           <div className="scan-heading">
-            <h1>Ready to register.</h1>
-            <p>Confirm this new asset before saving.</p>
+            <h1>Confirm & save</h1>
+            <p>One last check before adding it to inventory.</p>
           </div>
           <div className="card confirmation">
             <AssetPortrait asset={asset} />
@@ -863,49 +848,54 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 </span>
               </div>
             </div>
-            <dl>
-              <div>
-                <dt>Brand / model</dt>
-                <dd>
-                  {display(asset.brand)} / {display(asset.model)}
-                </dd>
-              </div>
+            <dl className="confirmation-key-facts">
               <div>
                 <dt>Serial number</dt>
                 <dd className="serial">{display(asset.serial)}</dd>
-              </div>
-              <div>
-                <dt>Specifications</dt>
-                <dd>{display(asset.specs)}</dd>
-              </div>
-              <div>
-                <dt>Condition</dt>
-                <dd>{asset.condition}</dd>
-              </div>
-              <div>
-                <dt>Accessories</dt>
-                <dd>{asset.accessories || "Not checked"}</dd>
-              </div>
-              <div>
-                <dt>Location</dt>
-                <dd>{asset.location || "With assignee"}</dd>
               </div>
               <div>
                 <dt>Assigned to</dt>
                 <dd>{assignee || "Unassigned"}</dd>
               </div>
               <div>
-                <dt>Purchase cost</dt>
-                <dd>
-                  {asset.purchaseCost
-                    ? `${asset.purchaseCurrency || "Unknown currency"} ${asset.purchaseCost}`
-                    : "Unknown"}
-                </dd>
+                <dt>Location</dt>
+                <dd>{asset.location || "With assignee"}</dd>
               </div>
             </dl>
+            <details className="disclosure confirmation-extra">
+              <summary>Additional details</summary>
+              <dl>
+                <div>
+                  <dt>Brand / model</dt>
+                  <dd>
+                    {display(asset.brand)} / {display(asset.model)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Specifications</dt>
+                  <dd>{display(asset.specs)}</dd>
+                </div>
+                <div>
+                  <dt>Condition</dt>
+                  <dd>{asset.condition}</dd>
+                </div>
+                <div>
+                  <dt>Accessories</dt>
+                  <dd>{asset.accessories || "Not checked"}</dd>
+                </div>
+                <div>
+                  <dt>Purchase cost</dt>
+                  <dd>
+                    {asset.purchaseCost
+                      ? `${asset.purchaseCurrency || "Unknown currency"} ${asset.purchaseCost}`
+                      : "Unknown"}
+                  </dd>
+                </div>
+              </dl>
+            </details>
           </div>
-          <div className="card review-checklist">
-            <h2>Review checklist</h2>
+          <details className="disclosure review-checklist">
+            <summary>Verification checks</summary>
             <p>
               {asset.serialChecked ? <Check /> : <FileText />}Serial:{" "}
               {asset.serialChecked ? "Checked" : "Unknown"}
@@ -921,7 +911,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <Notice>
               Unverified fields stay Unknown. Battery health is not assessed.
             </Notice>
-          </div>
+          </details>
           <p className="fine-print">
             Only new devices create a record. Save once to confirm.
           </p>
@@ -942,6 +932,21 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           </div>
         </section>
       )}
+      {step > 0 &&
+        !recognizing &&
+        !checking &&
+        !readIssue &&
+        !matches.length &&
+        !(possibleMatches.length > 0 && step === 1 && !matchDismissed) && (
+          <Button
+            className="scan-restart"
+            variant="quiet"
+            disabled={saving || checking}
+            onClick={startFresh}
+          >
+            Start a new scan
+          </Button>
+        )}
     </div>
   );
 }

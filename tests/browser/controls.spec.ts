@@ -73,8 +73,9 @@ test("fake device camera preview/capture/retake/use stops streams and preserves 
     .click();
   await page.getByRole("button", { name: "Use photo", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Review the label." }),
+    page.getByRole("heading", { name: "Check the device" }),
   ).toBeVisible();
+  await page.getByText("Label photo & reading", { exact: true }).click();
   await expect(page.getByAltText("Asset photo 1")).toBeVisible();
   await expect(
     page.getByText(/No AI extraction has been performed/),
@@ -341,8 +342,9 @@ test("OCR suggestions keep concurrent manual edits and still require human seria
     buffer: Buffer.from(data, "base64"),
   });
   await expect(
-    page.getByRole("heading", { name: "Review the label." }),
+    page.getByRole("heading", { name: "Check the device" }),
   ).toBeVisible();
+  await page.getByText("Brand, model & category", { exact: true }).click();
   await page.getByLabel("Brand", { exact: true }).fill("Manual brand");
   await expect(page.getByLabel("Serial number", { exact: true })).toHaveValue(
     "FIXTURE-LABEL",
@@ -367,7 +369,7 @@ test("live source enables registration/edit/movement and labels the Google write
   await fixture(page, live);
   await page.goto("/scan?manual=1");
   await expect(
-    page.getByText("Asset registration", { exact: true }),
+    page.getByRole("heading", { name: "Check the device", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".site-footer")).toContainText(
     "Saves sync to Google Sheets",

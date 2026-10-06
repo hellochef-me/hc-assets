@@ -68,7 +68,7 @@ async function newIntake(page: Page, serial: string) {
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Ready to register." }),
+    page.getByRole("heading", { name: "Confirm & save" }),
   ).toBeVisible();
 }
 test("real local API reads fixtures, blocks external origins and disables paid providers", async ({
@@ -142,6 +142,24 @@ for (const width of [320, 360, 390, 430, 768, 1280, 1440])
         fullPage: true,
         animations: "disabled",
       });
+    if (width === 390 || width === 1440) {
+      await page
+        .getByRole("button", { name: "Edit details", exact: true })
+        .click();
+      await page.screenshot({
+        path: `docs/screenshots/edit-details-${width}.png`,
+      });
+      await page
+        .getByRole("button", { name: "Close dialog", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Reassign owner", exact: true })
+        .click();
+      await page.screenshot({
+        path: `docs/screenshots/reassign-owner-${width}.png`,
+      });
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    }
     await page.goto("/scan");
     await expect(
       page.getByRole("heading", { name: "Scan a label" }),
@@ -167,7 +185,7 @@ for (const width of [320, 360, 390, 430, 768, 1280, 1440])
       .getByRole("button", { name: "Skip for now", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Ready to register." }),
+      page.getByRole("heading", { name: "Confirm & save" }),
     ).toBeVisible();
     await noOverflow(page);
     if (width === 390)
@@ -365,7 +383,7 @@ test("unknown serial is explicit and lookup preserves meaningful internal charac
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Ready to register." }),
+    page.getByRole("heading", { name: "Confirm & save" }),
   ).toBeVisible();
   await expect(page.locator(".confirmation")).toContainText("Unknown");
 });
@@ -491,8 +509,9 @@ test("valid photo, cancellation of delayed preparation and retake preserve draft
     .getByLabel("Upload asset photos")
     .setInputFiles({ name: "demo.png", mimeType: "image/png", buffer: png });
   await expect(
-    page.getByRole("heading", { name: "Review the label." }),
+    page.getByRole("heading", { name: "Check the device" }),
   ).toBeVisible();
+  await page.getByText("Label photo & reading", { exact: true }).click();
   await expect(page.getByAltText("Asset photo 1")).toBeVisible();
   await page.getByRole("button", { name: "Remove photo 1" }).click();
   await expect(page.getByText("No label photo retained")).toBeVisible();
@@ -681,6 +700,7 @@ test("assigned assets can omit storage; return and unassigned edits require a lo
   await page
     .getByRole("button", { name: "Move or assign", exact: true })
     .click();
+  await page.getByText("Change movement type", { exact: true }).click();
   await page.getByRole("combobox", { name: "Movement", exact: true }).click();
   await page.getByRole("option", { name: "Return", exact: true }).click();
   await page

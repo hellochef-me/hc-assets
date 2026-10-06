@@ -106,22 +106,25 @@ export function MoveDialog({
           </div>
         </div>
         <ArrowDown className="owner-direction" />
-        <Field label="Movement">
-          <Select
-            value={action}
-            onChange={(e) => setAction(e.target.value as typeof action)}
-          >
-            {movements
-              .filter((m) =>
-                asset.assignee
-                  ? m !== "Assign"
-                  : !["Transfer", "Return"].includes(m),
-              )
-              .map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-          </Select>
-        </Field>
+        <details className="movement-kind">
+          <summary>Change movement type</summary>
+          <Field label="Movement">
+            <Select
+              value={action}
+              onChange={(e) => setAction(e.target.value as typeof action)}
+            >
+              {movements
+                .filter((m) =>
+                  asset.assignee
+                    ? m !== "Assign"
+                    : !["Transfer", "Return"].includes(m),
+                )
+                .map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+            </Select>
+          </Field>
+        </details>
         {["Assign", "Transfer"].includes(action) && (
           <Field label="Assign to">
             <Select
@@ -140,8 +143,8 @@ export function MoveDialog({
           label="Destination"
           hint={
             locationOptional
-              ? "Storage location is optional while assigned to someone."
-              : "Unassigned equipment must be stored in Engineering Area or Locker."
+              ? "Optional while assigned to someone."
+              : "Choose where this device is stored."
           }
         >
           <Select

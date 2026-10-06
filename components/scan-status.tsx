@@ -72,12 +72,12 @@ export function ScanStatus({
       </div>
       <div className="scan-status-actions">
         {issue && (
-          <Button onClick={onRetry}>
+          <Button type="button" onClick={onRetry}>
             <Camera />
             Try another photo
           </Button>
         )}
-        <Button variant="secondary" onClick={onManual}>
+        <Button type="button" variant="secondary" onClick={onManual}>
           <Keyboard />
           {issue ? "Enter manually" : "Cancel and enter manually"}
         </Button>
