@@ -78,9 +78,8 @@ export default function Page() {
             : "Reload inventory"}
         </Button>
         <p>
-          Live providers require secure server configuration. Never paste keys
-          into chat or browser fields. Production records, headers and historic
-          events have not been changed.
+          Keys stay securely on the server. Existing IDs, headers and historical
+          events are preserved.
         </p>
       </section>
     </div>
