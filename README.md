@@ -18,6 +18,6 @@ Browser checks expect the local server already running and Google Chrome at its 
 
 [Theme and motion](docs/THEME.md) · [Architecture and integration needs](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md) · [Screenshots](docs/screenshots)
 
-Photo recognition and live resale research currently return an explicit unavailable state. The read-only Sheet adapter and intelligence/environment interfaces are not connected. The app does not claim real OCR or internet comparables were tested. The reference image’s prices/counts are fictional and are not app data.
+Photo recognition and live resale research currently return an explicit unavailable state. Real server OCR, cited AED resale, Google read/auth, and a controlled Sheet writer are implemented behind this disabled boundary, with mocked contract tests. They are not connected or live-tested. See [integration status and remaining work](docs/INTEGRATIONS.md). The reference image’s prices/counts are fictional and are not app data.
 
 Publica Sans falls back to system sans until an approved licensed local font is available. The logo is the actual SVG from hellochef.me. Mobile behavior is tested in desktop Chrome viewport emulation; physical iOS/Android camera, keyboards and Safari are separate acceptance work.

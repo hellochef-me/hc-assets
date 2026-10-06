@@ -7,7 +7,11 @@ export function integrationConfiguration() {
     liveEnabled: false,
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
     model: process.env.HC_ASSETS_OPENAI_MODEL || "",
+    searchModel: process.env.HC_ASSETS_SEARCH_MODEL || "",
     spreadsheetConfigured: Boolean(process.env.HC_ASSETS_SPREADSHEET_ID),
+    writerConfigured: Boolean(
+      process.env.HC_ASSETS_GATEWAY_URL && process.env.HC_ASSETS_GATEWAY_SECRET,
+    ),
   };
 }
 export interface PhotoExtraction {
