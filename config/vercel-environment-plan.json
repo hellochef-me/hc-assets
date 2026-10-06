@@ -1,5 +1,5 @@
 {
-  "status": "public-live-capabilities-approved-bound-awaiting-deployment",
+  "status": "production-released-verified",
   "projectName": "hc-assets",
   "framework": "nextjs",
   "nodeVersion": "22.x",
@@ -33,7 +33,7 @@
     },
     "requiredSecretNames": [],
     "requiredUnconfiguredNames": [],
-    "status": "Production live backend/write/OCR/resale/public-access flags bound after precise user confirmation. Not deployed yet.",
+    "status": "Production released and public live capabilities verified at assets.hellochef.me.",
     "boundSensitiveNames": [
       "OPENAI_API_KEY",
       "GOOGLE_SERVICE_ACCOUNT_EMAIL",
@@ -58,5 +58,7 @@
     "HC_ASSETS_OPENAI_MODEL": "gpt-5.6-terra",
     "HC_ASSETS_SEARCH_MODEL": "gpt-5.6-terra"
   },
-  "verifiedDomain": "assets.hellochef.me"
+  "verifiedDomain": "assets.hellochef.me",
+  "deploymentId": "dpl_Ca5NCGQDhRcSHuvmvyvtxR4K9H64",
+  "productionBranch": "feat/next-assets-rewrite"
 }

@@ -3,7 +3,7 @@ import "./globals.css";
 import { Shell } from "@/components/shell";
 import { SourceProvider } from "@/components/source-context";
 export const metadata: Metadata = {
-  title: "HCAssets · Equipment inventory",
+  title: "Hello Assets · Equipment inventory",
   description: "Equipment, people and every handover.",
   robots: { index: false, follow: false },
 };

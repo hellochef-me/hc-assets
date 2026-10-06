@@ -2176,14 +2176,15 @@ dialog > form {
   line-height: 1.6;
 }
 
-/* Independent HCAssets lockup replaces the old two-brand header. */
+/* Independent Hello Assets lockup replaces the old two-brand header. */
 .site-header .brand {
   gap: 0;
 }
 .site-header .brand img {
   width: 196px;
   height: 40px;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
 }
 @media (max-width: 760px) {
   .site-header .brand img {
@@ -2241,3 +2242,4 @@ dialog > form {
   margin-top: 12px;
   font-size: 13px;
 }
+

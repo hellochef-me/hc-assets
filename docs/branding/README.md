@@ -1,22 +1,18 @@
-# HCAssets identity
+# Hello Assets identity
 
-Independent asset-tag identity for assets.hellochef.me, created on 6 October 2026 at Anthony’s request. The Hello Chef company logo is not part of this identity or the application header. The mark combines an equipment tag, its attachment hole, and an A built from three inventory tiers.
+Anthony requested the name Hello Assets and approved this new generated logo after the original Production release on 6 October 2026. The approved artwork is installed directly, with its transparency unchanged. It is independent of the Hello Chef logo.
 
 ## Deliverables
 
-- `../../public/brand/hcassets-logo.svg` and PNG: coral/ink horizontal lockup on transparency.
-- `hcassets-logo-dark`: coral/cream lockup for dark surfaces.
-- `hcassets-logo-mono`: single-color ink lockup.
-- `hcassets-mark` and `hcassets-mark-white`: standalone transparent mark.
-- `icon-16/32/192/512.png`: application icons; `app/icon.svg` and `app/apple-icon.png` are installed Next.js metadata assets.
-- `hcassets-social.svg/png`: 1200 × 630 share card with no private inventory data.
-- `hcassets-brand-sheet.svg/png`: light/dark brand reference and palette.
-- `hcassets-logo-generated.png`: original transparent artwork created with the built-in image generation tool. The production SVG is an optical redraw of that concept so small icons and variants use identical geometry. PNG exports are rendered from these native SVG sources.
+- `../../public/brand/hello-assets-logo.png`: approved transparent horizontal logo.
+- `../../public/brand/hello-assets-icon.png`: generated matching standalone speech-bubble/inventory icon.
+- `../../app/icon.png` and `../../app/apple-icon.png`: installed app metadata icons.
+- `hello-assets-brand-kit.zip`: logo, icon and this guide.
 
-Coral #E9573F, ink #292524, cream #FFF5EE, white #FFFFFF. Use coral on light surfaces; use cream for the wordmark on dark surfaces. Keep at least one attachment-hole diameter around the mark and the complete lockup. Use the mark alone below a 120 px lockup width. Do not stretch, rotate, add shadows/gradients, or remove its transparent cutouts. Wordmark uses bold Arial/Helvetica/system sans; SVG text remains editable. No licensed company font or external font request is required.
+The coral speech bubble combines the friendly Hello name with shelves and asset containers. Its deep-teal tracking dot echoes available/confirmed states. Coral #E9573F, deep teal #17634F, charcoal #292524 and off-white shelves complement the warm application palette. The wordmark is embedded artwork, not a licensed font dependency. The header uses CSS object-fit to frame the original transparent artwork without altering its pixels.
 
-## Generation prompt
+The original HCAssets brand assets remain archived for reference. Existing Sheet IDs, environment names, request receipts and the hc-assets GitHub/Vercel project names are unchanged.
 
-Built-in image generation, not a CLI/API fallback: “Design one superb independent logo, a bold minimalist geometric asset-tag symbol beside the exact wordmark HCAssets. A compact coral-red clipped-corner equipment tag with a simple negative-space stacked inventory/letter A motif, two or three confident shapes, optically balanced, identifiable at favicon size. Wordmark dark charcoal, rounded contemporary sans serif, professional, approachable, restrained. Single horizontal logo lockup, symbol left and HCAssets right. Generous transparent margin. Flat vector-like crisp edges. Coral #E9573F and charcoal #292524. Genuinely transparent background. Only text HCAssets, exact spelling and case. No tagline. No Hello Chef logo, chef hat, food, existing company logo, mockup, shadows, gradients, decorations or watermark. Original independent identity.”
+## Generation
 
-The domain in the share card is the intended destination; it is not evidence that a deployment or DNS cutover has occurred.
+Built-in image generation was used for the original logo, then a built-in referenced-image edit generated the standalone icon. No CLI or project OpenAI key was used for branding. The final prompt is in `hello-assets-generation-prompt.txt`. The icon request preserved the approved symbol and removed only the wordmark for a square transparent export.
