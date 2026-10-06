@@ -13,9 +13,11 @@ export function AssetFields({
   setAsset,
   nameRequired = true,
   assigned = false,
+  assignmentControls,
 }: {
   nameRequired?: boolean;
   assigned?: boolean;
+  assignmentControls?: React.ReactNode;
   asset: AssetInput;
   setAsset: (a: AssetInput) => void;
 }) {
@@ -150,6 +152,7 @@ export function AssetFields({
           </Field>
         </div>
       </details>
+      {assignmentControls}
       <Field
         label="Location"
         hint={

@@ -607,3 +607,53 @@ test("notes-only edits preserve legacy fields, audit once, reject stale writes a
     assert.equal(empty.location, before.location);
     assert.deepEqual((await store.snapshot()).people, snapshot.people);
   }));
+
+test("similar serial intake requires review, exact duplicates never bypass, assigned creation is atomic", () =>
+  local(async (store, directory) => {
+    const first = await store.commit("create", {
+      asset: intake("QY8C7K1QR9"),
+      requestId: randomUUID(),
+    });
+    const near = {
+      asset: { ...intake("QYC7K1QR9"), location: "" },
+      assignee: "Nora Ellis",
+      requestId: randomUUID(),
+    };
+    await assert.rejects(
+      store.commit("create", near),
+      (e: unknown) =>
+        e instanceof StoreError &&
+        e.code === "possible-duplicate" &&
+        e.assetId === first.id,
+    );
+    const before = await store.snapshot();
+    const reviewed = { ...near, reviewedMatchIds: [first.id] };
+    const second = await store.commit("create", reviewed);
+    assert.equal(second.assignee, "Nora Ellis");
+    assert.equal(second.location, "");
+    assert.equal(second.status, "Assigned");
+    assert.deepEqual(
+      await new LocalStore(directory).commit("create", reviewed),
+      second,
+    );
+    const after = await store.snapshot();
+    assert.equal(after.assets.length, before.assets.length + 1);
+    assert.equal(after.history.length, before.history.length + 1);
+    assert.equal(after.history[0].to.assignee, "Nora Ellis");
+    await assert.rejects(
+      store.commit("create", {
+        ...reviewed,
+        requestId: randomUUID(),
+        reviewedMatchIds: [first.id, second.id],
+      }),
+      /existing asset/,
+    );
+    await assert.rejects(
+      store.commit("create", {
+        asset: intake("UNRELATED88"),
+        assignee: "Missing person",
+        requestId: randomUUID(),
+      }),
+      /directory/,
+    );
+  }));

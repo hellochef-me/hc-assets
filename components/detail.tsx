@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -30,11 +31,17 @@ import { useSource } from "./source-context";
 import type { ResaleEvidence } from "@/lib/server/integrations";
 import { resaleScenarios } from "@/lib/resale";
 export function Detail({ id }: { id: string }) {
+  const router = useRouter();
   const { source, canWrite } = useSource();
   const [researchEvidence, setEvidence] = useState<ResaleEvidence | null>(null);
   const [evidenceIdentity, setEvidenceIdentity] = useState("");
   const { snapshot, error, loading, reload, setSnapshot } = useInventory();
   const asset = snapshot?.assets.find((a) => a.id === id);
+  const consolidatedId = snapshot?.aliases?.[id];
+  useEffect(() => {
+    if (consolidatedId)
+      router.replace(`/assets/${encodeURIComponent(consolidatedId)}`);
+  }, [consolidatedId, router]);
   const identityKey = JSON.stringify([
     id,
     asset?.brand,
@@ -126,7 +133,7 @@ export function Detail({ id }: { id: string }) {
         <Button onClick={reload}>Retry</Button>
       </div>
     );
-  if (loading)
+  if (loading || consolidatedId)
     return (
       <div className="loading" role="status">
         Loading asset…
@@ -139,7 +146,9 @@ export function Detail({ id }: { id: string }) {
         <Link href="/">Back to inventory</Link>
       </div>
     );
-  const events = snapshot!.history.filter((e) => e.assetId === id);
+  const events = snapshot!.history.filter(
+    (e) => e.assetId === id || asset.mergedFromIds?.includes(e.assetId),
+  );
   return (
     <div className="page detail-page">
       <Link href="/" className="back-link">
@@ -227,6 +236,14 @@ export function Detail({ id }: { id: string }) {
                 </span>
               </div>
             </div>
+            <Button
+              variant="secondary"
+              disabled={!canWrite || asset.status === "Retired"}
+              onClick={() => setMove(true)}
+            >
+              <ArrowLeftRight />
+              {asset.assignee ? "Reassign owner" : "Assign owner"}
+            </Button>
             <div className="purchase-line">
               <Wallet />
               <span>Purchase cost</span>
@@ -390,6 +407,10 @@ export function Detail({ id }: { id: string }) {
           setConfirmed(true);
           void reload();
         }}
+        onReload={() => {
+          setMove(false);
+          void reload();
+        }}
       />
       <Dialog
         title="Edit asset"
@@ -400,6 +421,24 @@ export function Detail({ id }: { id: string }) {
       >
         {draft && (
           <form onSubmit={save}>
+            <section className="edit-assignment">
+              <strong>Owner: {asset.assignee || "Unassigned"}</strong>
+              <p>
+                Change ownership through an assignment so the movement history
+                is recorded. Save any detail edits first.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving || asset.status === "Retired"}
+                onClick={() => {
+                  setEditing(false);
+                  setMove(true);
+                }}
+              >
+                {asset.assignee ? "Reassign owner" : "Assign owner"}
+              </Button>
+            </section>
             <DevicePhoto
               asset={draft}
               setAsset={(next) =>

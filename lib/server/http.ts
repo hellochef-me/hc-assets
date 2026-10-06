@@ -86,13 +86,16 @@ export function failure(e: unknown) {
   if (e instanceof ZodError)
     return json({ error: e.issues[0]?.message || "Invalid request." }, 400);
   if (e instanceof StoreError)
-    return json({ error: e.message, assetId: e.assetId }, e.status);
+    return json(
+      { error: e.message, assetId: e.assetId, code: e.code },
+      e.status,
+    );
   if (e instanceof ProviderError)
     return json({ error: e.message }, e.code === "limit" ? 429 : 503);
   if (e instanceof SheetGatewayError)
     return json(
-      { error: e.message },
-      ["duplicate", "conflict"].includes(e.code)
+      { error: e.message, assetId: e.assetId, code: e.code },
+      ["duplicate", "possible-duplicate", "conflict"].includes(e.code)
         ? 409
         : e.code === "invalid"
           ? 400

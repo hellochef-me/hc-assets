@@ -129,7 +129,12 @@ export class DirectSheetWriter {
         )
           throw error;
         const code = (error as { writerCode?: string }).writerCode;
-        if (code) throw new SheetGatewayError(code, (error as Error).message);
+        if (code)
+          throw new SheetGatewayError(
+            code,
+            (error as Error).message,
+            (error as { assetId?: string }).assetId,
+          );
         throw new SheetGatewayError(
           "uncertain",
           "The Sheet result could not be confirmed. Preserve the same request ID for reconciliation.",

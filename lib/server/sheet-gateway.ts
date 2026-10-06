@@ -24,6 +24,8 @@ export const storedAsset = z
     createdAt: z.string().max(100),
     updatedAt: z.string().max(100),
     raw: z.record(z.string(), z.string()).optional(),
+    mergedIntoId: z.string().min(1).max(400).optional(),
+    mergedFromIds: z.array(z.string().min(1).max(400)).optional(),
   })
   .strict();
 const result = storedAsset;
@@ -56,6 +58,7 @@ export class SheetGatewayError extends Error {
   constructor(
     public code: string,
     message: string,
+    public assetId?: string,
   ) {
     super(message);
   }

@@ -143,8 +143,18 @@ export function decodeControlledSnapshot(tables: unknown[][][]): Snapshot {
       "Duplicate movement IDs require review.",
     );
   const ids = new Set(full.map((e) => e.id));
+  const aliases = Object.fromEntries(
+    assets.filter((a) => a.mergedIntoId).map((a) => [a.id, a.mergedIntoId!]),
+  );
+  for (const target of Object.values(aliases))
+    if (!assets.some((a) => a.id === target && !a.mergedIntoId))
+      throw new ProviderError(
+        "invalid_response",
+        "A consolidated asset needs review.",
+      );
   return {
-    assets,
+    assets: assets.filter((a) => !a.mergedIntoId),
+    ...(Object.keys(aliases).length ? { aliases } : {}),
     people: decodeEmployees(tables[2]),
     history: [
       ...full,

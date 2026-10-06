@@ -81,8 +81,8 @@ export function DevicePhoto({
         <div>
           <h2>Take a photo of the device.</h2>
           <p>
-            This becomes the inventory thumbnail. Label and serial photos are
-            kept separately for review.
+            This becomes the inventory thumbnail. Capture the whole device, not
+            its serial label.
           </p>
         </div>
       </div>

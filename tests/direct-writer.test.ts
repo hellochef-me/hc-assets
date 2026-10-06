@@ -363,3 +363,64 @@ for (const transport of ["direct", "gateway"] as const)
       await writer.clean();
     }
   });
+
+test("production writer catches OCR near matches before writes and creates reviewed ownership in one batch", async () => {
+  const w = await setup();
+  try {
+    const first = await w
+      .client()
+      .commit(
+        "create",
+        { ...input(), asset: { ...input().asset, serial: "QY8C7K1QR9" } },
+        "Public visitor (sign-in deferred)",
+      );
+    const near = {
+      ...input(),
+      asset: { ...input().asset, serial: "QYC7K1QR9", location: "" },
+      assignee: "Fixture Person",
+    };
+    const before = w.mock.calls();
+    await assert.rejects(
+      w.client().commit("create", near, "Public visitor (sign-in deferred)"),
+      (e: unknown) =>
+        (e as { code: string }).code === "possible-duplicate" &&
+        (e as { assetId: string }).assetId === first.id,
+    );
+    assert.equal(w.mock.calls(), before);
+    const command = { ...near, reviewedMatchIds: [first.id] };
+    const asset = await w
+      .client()
+      .commit("create", command, "Public visitor (sign-in deferred)");
+    assert.equal(asset.assignee, "Fixture Person");
+    assert.equal(asset.location, "");
+    assert.equal(asset.status, "Assigned");
+    assert.deepEqual(
+      await w
+        .client()
+        .commit("create", command, "Public visitor (sign-in deferred)"),
+      asset,
+    );
+    const snapshot = decodeControlledSnapshot(w.mock.tables.slice(0, 5));
+    assert.equal(snapshot.history[0].to.assignee, "Fixture Person");
+    assert.equal(snapshot.assets.length, 2);
+    await assert.rejects(
+      w
+        .client()
+        .commit(
+          "create",
+          {
+            ...command,
+            requestId: randomUUID(),
+            reviewedMatchIds: [first.id, asset.id],
+          },
+          "Public visitor (sign-in deferred)",
+        ),
+      (e: unknown) =>
+        (e as { code: string }).code === "duplicate" &&
+        (e as { assetId: string }).assetId === asset.id,
+    );
+    assert.equal(w.mock.calls(), before + 1);
+  } finally {
+    await w.clean();
+  }
+});

@@ -4,6 +4,7 @@ export class ApiError extends Error {
     message: string,
     public assetId?: string,
     public status?: number,
+    public code?: string,
   ) {
     super(message);
   }
@@ -36,14 +37,20 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
       data?.error || "The request failed.",
       data?.assetId,
       r.status,
+      data?.code,
     );
   return data;
 }
 export const fetchSnapshot = () => request<Snapshot>("/api/inventory");
-export const saveAsset = (asset: AssetInput, requestId: string) =>
+export const saveAsset = (
+  asset: AssetInput,
+  requestId: string,
+  assignee = "",
+  reviewedMatchIds: string[] = [],
+) =>
   request<{ asset: Asset }>("/api/inventory", {
     method: "POST",
-    body: JSON.stringify({ asset, requestId }),
+    body: JSON.stringify({ asset, requestId, assignee, reviewedMatchIds }),
   });
 export async function compressPhoto(file: File): Promise<string> {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))

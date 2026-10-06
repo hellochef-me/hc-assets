@@ -396,6 +396,10 @@ export function Inventory() {
           people={snapshot.people}
           open={move}
           onClose={() => setMove(false)}
+          onReload={() => {
+            setMove(false);
+            void reload();
+          }}
           onSaved={() => {
             setSelected(null);
             void reload();

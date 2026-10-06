@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { serialIdentity, similarSerial } from "./serial.mjs";
+export { serialIdentity } from "./serial.mjs";
 export const categories = [
   "Laptop",
   "Phone",
@@ -99,6 +101,8 @@ export const editAssetInput = assetDraftInput;
 export type AssetInput = z.infer<typeof editAssetInput>;
 // Preserve locations imported from existing records; only new commands use the enum.
 export interface Asset extends Omit<AssetInput, "location"> {
+  mergedIntoId?: string;
+  mergedFromIds?: string[];
   location: string;
   id: string;
   status: (typeof statuses)[number];
@@ -123,6 +127,7 @@ export interface Movement {
   notes: string;
 }
 export interface Snapshot {
+  aliases?: Record<string, string>;
   assets: Asset[];
   people: Person[];
   history: Movement[];
@@ -197,8 +202,27 @@ export const editInput = z.union(
   },
 );
 export const createInput = z
-  .object({ asset: assetInput, requestId: z.string().uuid() })
-  .strict();
+  .object({
+    asset: editAssetInput,
+    requestId: z.string().uuid(),
+    assignee: text.optional(),
+    reviewedMatchIds: z.array(text.min(1)).max(100).optional(),
+  })
+  .strict()
+  .superRefine((input, ctx) => {
+    if (
+      !hasValidStorageLocation({
+        location: input.asset.location,
+        assignee: input.assignee || "",
+      })
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["asset", "location"],
+        message:
+          "Choose Engineering Area or Locker when the asset is unassigned.",
+      });
+  });
 export function blankAsset(): AssetInput {
   return {
     name: "",
@@ -236,7 +260,9 @@ export function hasValidStorageLocation(asset: {
     (!asset.location && Boolean(asset.assignee.trim()))
   );
 }
-export const serialIdentity = (v: string) => v.trim().toLowerCase();
+export function possibleSerialMatches(assets: Asset[], serial: string) {
+  return assets.filter((a) => similarSerial(a.serial, serial));
+}
 export function needsReview(
   a: Pick<AssetInput, "serial" | "specs" | "condition">,
 ) {

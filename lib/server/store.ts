@@ -6,7 +6,6 @@ import {
   Asset,
   Snapshot,
   Movement,
-  assetInput,
   editAssetInput,
   hasValidStorageLocation,
   createInput,
@@ -15,6 +14,7 @@ import {
   movementState,
   needsReview,
   serialIdentity,
+  possibleSerialMatches,
 } from "../model";
 import { fixtures } from "../fixtures";
 export class StoreError extends Error {
@@ -22,6 +22,7 @@ export class StoreError extends Error {
     message: string,
     public status = 400,
     public assetId?: string,
+    public code?: string,
   ) {
     super(message);
   }
@@ -136,13 +137,18 @@ export class LocalStore {
         action = "Notes updated";
         notes = data.notes;
       } else {
-        const value = (kind === "edit" ? editAssetInput : assetInput).parse(
-          (data as { asset: unknown }).asset,
-        );
+        const value = editAssetInput.parse((data as { asset: unknown }).asset);
+        const intake = kind === "create" ? createInput.parse(data) : null;
+        const assignee = old?.assignee || intake?.assignee || "";
+        if (
+          intake?.assignee &&
+          !s.people.some((p) => p.name === intake.assignee)
+        )
+          throw new StoreError("Choose a person from the directory.");
         if (
           !hasValidStorageLocation({
             location: value.location,
-            assignee: old?.assignee || "",
+            assignee,
           })
         )
           throw new StoreError(
@@ -151,6 +157,7 @@ export class LocalStore {
         const serial = serialIdentity(value.serial);
         const duplicate =
           serial &&
+          (!old || serialIdentity(old.serial) !== serial) &&
           s.assets.find(
             (x) => x.id !== id && serialIdentity(x.serial) === serial,
           );
@@ -159,17 +166,30 @@ export class LocalStore {
             "That serial number belongs to an existing asset. Open it instead.",
             409,
             duplicate.id,
+            "duplicate",
           );
+        if (intake) {
+          const possible = possibleSerialMatches(s.assets, value.serial).filter(
+            (a) => !intake.reviewedMatchIds?.includes(a.id),
+          );
+          if (possible.length)
+            throw new StoreError(
+              "A similar serial already exists. Review the possible match before registering a separate device.",
+              409,
+              possible[0].id,
+              "possible-duplicate",
+            );
+        }
         a = {
           ...value,
           id: old?.id || `DEMO-${randomUUID()}`,
-          assignee: old?.assignee || "",
+          assignee,
           status:
             old?.status === "Retired"
               ? "Retired"
               : old?.status === "Repair"
                 ? "Repair"
-                : old?.assignee
+                : assignee
                   ? "Assigned"
                   : needsReview(value)
                     ? "Needs review"

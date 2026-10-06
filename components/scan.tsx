@@ -15,7 +15,10 @@ import {
 import {
   Asset,
   AssetInput,
-  assetInput,
+  createInput,
+  Person,
+  possibleSerialMatches,
+  serialIdentity,
   blankAsset,
   display,
   findBySerial,
@@ -27,7 +30,8 @@ import {
   saveAsset,
   request,
 } from "@/lib/client";
-import { Button, Notice, Device } from "./ui";
+import { Button, Notice, Device, Field } from "./ui";
+import { Select } from "./select";
 import { AssetFields } from "./asset-fields";
 import { DevicePhoto } from "./device-photo";
 import { CameraCapture } from "./camera-capture";
@@ -55,11 +59,69 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     [saving, setSaving] = useState(false),
     [checking, setChecking] = useState(false),
     [unknownConfirmed, setUnknownConfirmed] = useState(false),
-    [draftWarning, setDraftWarning] = useState("");
+    [draftWarning, setDraftWarning] = useState(""),
+    [assignee, setAssignee] = useState(""),
+    [labelPhotos, setLabelPhotos] = useState<string[]>([]),
+    [people, setPeople] = useState<Person[]>([]),
+    [possibleMatches, setPossibleMatches] = useState<Asset[]>([]),
+    [reviewedMatchIds, setReviewedMatchIds] = useState<string[]>([]);
   const photoInput = useRef<HTMLInputElement>(null),
     cameraInput = useRef<HTMLInputElement>(null),
     operation = useRef(0),
     receipt = useRef({ payload: "", id: "" });
+  const latestAsset = useRef(asset),
+    completed = useRef(false),
+    submitting = useRef(false);
+  useEffect(() => {
+    latestAsset.current = asset;
+  }, [asset]);
+  useEffect(() => {
+    let active = true;
+    void fetchSnapshot()
+      .then((snapshot) => {
+        if (active) setPeople(snapshot.people);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  function clearDraft() {
+    completed.current = true;
+    try {
+      sessionStorage.removeItem(draftKey);
+    } catch {
+      /* navigation remains safe */
+    }
+  }
+  function openExisting(id: string) {
+    clearDraft();
+    router.replace(`/assets/${encodeURIComponent(id)}`);
+  }
+  function startFresh() {
+    cancelRecognition();
+    operation.current++;
+    setPreparing(false);
+    setAsset(blankAsset());
+    setAssignee("");
+    setLabelPhotos([]);
+    setMatches([]);
+    setPossibleMatches([]);
+    setReviewedMatchIds([]);
+    setUnknownConfirmed(false);
+    setRecognitionNotice("");
+    setError("");
+    setStep(0);
+    receipt.current = { payload: "", id: "" };
+  }
+  function changeAsset(next: AssetInput) {
+    if (next.serial !== asset.serial) {
+      setPossibleMatches([]);
+      setReviewedMatchIds([]);
+      setMatches([]);
+    }
+    setAsset(next);
+  }
   useEffect(
     () => () => {
       operation.current++;
@@ -108,6 +170,39 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       setRecognitionNotice(
         "AI label suggestions are ready for human review. Your existing entries were kept. Check the serial and visible specifications; missing fields remain Unknown.",
       );
+      const serial = latestAsset.current.serial || extracted.serial || "";
+      if (
+        latestAsset.current.serial &&
+        extracted.serial &&
+        serialIdentity(latestAsset.current.serial) !==
+          serialIdentity(extracted.serial)
+      ) {
+        setRecognitionNotice(
+          `This photo reads ${extracted.serial}, but the form contains ${latestAsset.current.serial}. Check the physical label and correct the serial, or use Start a new scan for another device.`,
+        );
+        return;
+      }
+      if (serial) {
+        const snapshot = await fetchSnapshot();
+        if (
+          token !== recognition.current.generation ||
+          (latestAsset.current.serial && latestAsset.current.serial !== serial)
+        )
+          return;
+        setPeople(snapshot.people);
+        const found = findBySerial(snapshot.assets, serial);
+        if (found.length === 1) {
+          openExisting(found[0].id);
+          return;
+        }
+        if (found.length > 1) {
+          setMatches(found);
+          setError(
+            "Multiple existing records have this serial. Choose a record to inspect; no records were merged.",
+          );
+        } else
+          setPossibleMatches(possibleSerialMatches(snapshot.assets, serial));
+      }
     } catch (e) {
       if (token === recognition.current.generation)
         setRecognitionNotice(
@@ -119,16 +214,16 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   }
   function captured(data: string) {
     setCameraOpen(false);
-    if (asset.photos.length >= 3) {
+    if (labelPhotos.length >= 3) {
       setError(
         "Keep up to three photos. Remove an existing photo before adding another.",
       );
       return;
     }
-    const photoData = [...asset.photos, data];
-    setAsset((current) => ({ ...current, photos: [...current.photos, data] }));
+    const photoData = [...labelPhotos, data];
+    setLabelPhotos(photoData);
     setStep(1);
-    void readLabel(photoData.filter((_, i) => i !== asset.coverPhotoIndex));
+    void readLabel(photoData);
   }
   useEffect(() => {
     try {
@@ -137,11 +232,31 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         const draft = JSON.parse(raw);
         if (draft.asset && typeof draft.step === "number") {
           // Restore an interrupted browser session after hydration; never copy live data.
+          const cover = draft.asset.coverPhotoIndex;
+          const device = Number.isInteger(cover)
+            ? draft.asset.photos?.[cover]
+            : null;
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setAsset({ ...blankAsset(), ...draft.asset });
-          setStep(draft.step);
+          setAsset({
+            ...blankAsset(),
+            ...draft.asset,
+            photos: device ? [device] : [],
+            coverPhotoIndex: device ? 0 : null,
+          });
+          const removedLegacyLabels =
+            JSON.stringify(draft.asset.photos || []) !==
+            JSON.stringify(device ? [device] : []);
+          setStep(removedLegacyLabels ? 1 : draft.step);
+          if (removedLegacyLabels)
+            setDraftWarning(
+              "Temporary label photos were removed from this older draft. Check inventory before continuing, especially if its previous save was interrupted.",
+            );
           setUnknownConfirmed(!!draft.unknownConfirmed);
-          receipt.current = draft.receipt || { payload: "", id: "" };
+          setAssignee(draft.assignee || "");
+          setReviewedMatchIds(draft.reviewedMatchIds || []);
+          receipt.current = removedLegacyLabels
+            ? { payload: "", id: "" }
+            : draft.receipt || { payload: "", id: "" };
         }
       }
     } catch {
@@ -152,7 +267,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setReady(true);
   }, []);
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || completed.current) return;
     try {
       sessionStorage.setItem(
         draftKey,
@@ -160,6 +275,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           asset,
           step,
           unknownConfirmed,
+          assignee,
+          reviewedMatchIds,
           receipt: receipt.current,
         }),
       );
@@ -170,7 +287,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         "This browser could not preserve the draft on refresh. Keep this page open until you save.",
       );
     }
-  }, [asset, step, ready, unknownConfirmed]);
+  }, [asset, step, ready, unknownConfirmed, assignee, reviewedMatchIds]);
   useEffect(() => {
     if (!preparing && !saving && !checking) return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -185,19 +302,13 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setPreparing(true);
     setError("");
     try {
-      if (files.length + asset.photos.length > 3)
-        throw new Error(
-          "Keep up to three photos: label, device and accessories.",
-        );
+      if (files.length + labelPhotos.length > 3)
+        throw new Error("Use up to three temporary label photos for reading.");
       const data = await Promise.all(Array.from(files).map(compressPhoto));
       if (token !== operation.current) return;
-      setAsset((a) => ({ ...a, photos: [...a.photos, ...data] }));
+      setLabelPhotos((current) => [...current, ...data]);
       setStep(1);
-      void readLabel(
-        [...asset.photos, ...data].filter(
-          (_, i) => i !== asset.coverPhotoIndex,
-        ),
-      );
+      void readLabel([...labelPhotos, ...data]);
     } catch (e) {
       if (token === operation.current) setError((e as Error).message);
     } finally {
@@ -213,6 +324,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   }
   async function continueReview(e: React.FormEvent) {
     e.preventDefault();
+    if (recognizing || checking || preparing) return;
     setError("");
     setDuplicate("");
     setMatches([]);
@@ -231,10 +343,10 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setChecking(true);
     try {
       const snapshot = await fetchSnapshot();
+      setPeople(snapshot.people);
       const found = findBySerial(snapshot.assets, asset.serial);
       if (found.length === 1) {
-        sessionStorage.removeItem(draftKey);
-        router.push(`/assets/${encodeURIComponent(found[0].id)}`);
+        openExisting(found[0].id);
         return;
       }
       if (found.length > 1) {
@@ -250,7 +362,21 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         );
         return;
       }
-      const parsed = assetInput.safeParse(asset);
+      const possible = possibleSerialMatches(snapshot.assets, asset.serial);
+      setPossibleMatches(possible);
+      if (possible.some((a) => !reviewedMatchIds.includes(a.id))) {
+        setError(
+          "This may already be registered. Compare the serials below before creating another record.",
+        );
+        window.scrollTo({ top: 0, behavior: "instant" });
+        return;
+      }
+      const parsed = createInput.safeParse({
+        asset,
+        assignee,
+        reviewedMatchIds,
+        requestId: crypto.randomUUID(),
+      });
       if (!parsed.success) {
         setError(parsed.error.issues[0].message);
         return;
@@ -264,9 +390,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     }
   }
   async function save() {
+    if (submitting.current) return;
+    submitting.current = true;
     setError("");
     setDuplicate("");
-    const payload = JSON.stringify(asset);
+    const payload = JSON.stringify({ asset, assignee, reviewedMatchIds });
     if (receipt.current.payload !== payload)
       receipt.current = { payload, id: crypto.randomUUID() };
     try {
@@ -276,6 +404,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           asset,
           step,
           unknownConfirmed,
+          assignee,
+          reviewedMatchIds,
           receipt: receipt.current,
         }),
       );
@@ -284,13 +414,39 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     }
     setSaving(true);
     try {
-      const { asset: saved } = await saveAsset(asset, receipt.current.id);
-      sessionStorage.removeItem(draftKey);
-      router.push(`/assets/${encodeURIComponent(saved.id)}?saved=1`);
+      const { asset: saved } = await saveAsset(
+        asset,
+        receipt.current.id,
+        assignee,
+        reviewedMatchIds,
+      );
+      clearDraft();
+      router.replace(`/assets/${encodeURIComponent(saved.id)}?saved=1`);
     } catch (e) {
       setError((e as Error).message);
-      if (e instanceof ApiError && e.assetId) setDuplicate(e.assetId);
+      if (e instanceof ApiError && e.assetId) {
+        if (e.code === "duplicate") {
+          openExisting(e.assetId);
+          return;
+        }
+        setDuplicate(e.assetId);
+        if (e.code === "possible-duplicate") {
+          setStep(1);
+          setReviewedMatchIds([]);
+          try {
+            setPossibleMatches(
+              possibleSerialMatches(
+                (await fetchSnapshot()).assets,
+                asset.serial,
+              ),
+            );
+          } catch {
+            /* retry Continue for a fresh lookup */
+          }
+        }
+      }
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -326,7 +482,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         </span>
       </div>
       <ol className="steps" aria-label="Registration progress">
-        {["Capture", "Review", "Confirm"].map((s, i) => (
+        {["Label", "Details", "Device photo", "Confirm"].map((s, i) => (
           <li
             key={s}
             className={step >= i ? "complete" : ""}
@@ -337,6 +493,15 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           </li>
         ))}
       </ol>
+      {step > 0 && (
+        <Button
+          variant="quiet"
+          disabled={saving || checking}
+          onClick={startFresh}
+        >
+          Start a new scan
+        </Button>
+      )}
       {draftWarning && <Notice warning>{draftWarning}</Notice>}
       {error && (
         <Notice warning>
@@ -345,6 +510,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <Link
               className="inline-link"
               href={`/assets/${encodeURIComponent(duplicate)}`}
+              onClick={clearDraft}
             >
               Open existing asset →
             </Link>
@@ -359,12 +525,55 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               key={a.id}
               className="duplicate-record"
               href={`/assets/${encodeURIComponent(a.id)}`}
+              onClick={clearDraft}
             >
               {a.name} · {a.id}
               <br />
               {a.assignee || "Unassigned"} · {a.location}
             </Link>
           ))}
+        </section>
+      )}
+      {possibleMatches.length > 0 && step === 1 && (
+        <section
+          className="card duplicate-review"
+          aria-label="Possible existing assets"
+        >
+          <h2>Is this already registered?</h2>
+          <p>
+            Scanned serial: <strong>{asset.serial}</strong>. A missing or
+            misread character can create a duplicate. Open the matching device
+            to update its owner or details.
+          </p>
+          {possibleMatches.map((a) => (
+            <Link
+              key={a.id}
+              className="duplicate-record"
+              href={`/assets/${encodeURIComponent(a.id)}`}
+              onClick={clearDraft}
+            >
+              <strong>
+                {a.name} · {a.serial}
+              </strong>
+              <br />
+              {a.assignee || "Unassigned"} · {a.id} · Open existing asset →
+            </Link>
+          ))}
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={possibleMatches.every((a) =>
+                reviewedMatchIds.includes(a.id),
+              )}
+              onChange={(e) =>
+                setReviewedMatchIds(
+                  e.target.checked ? possibleMatches.map((a) => a.id) : [],
+                )
+              }
+            />
+            I compared these records and checked the physical label. This is a
+            different device.
+          </label>
         </section>
       )}
       {step === 0 ? (
@@ -374,7 +583,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <h1>Start with the label.</h1>
             <p>
               Capture the serial number clearly. Already registered? We’ll open
-              the asset.
+              the asset. Label photos are used for reading only and are not
+              saved.
             </p>
             <span className="light-tip">
               <Sun />
@@ -486,24 +696,16 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <p>You check the details. Unknowns can stay unknown.</p>
           </div>
           <div className="review-photo-strip">
-            {asset.photos.length ? (
-              asset.photos.map((p, i) => (
+            {labelPhotos.length ? (
+              labelPhotos.map((p, i) => (
                 <div key={p}>
                   <img src={p} alt={`Asset photo ${i + 1}`} />
                   <button
                     aria-label={`Remove photo ${i + 1}`}
                     onClick={() =>
-                      setAsset({
-                        ...asset,
-                        photos: asset.photos.filter((_, index) => index !== i),
-                        coverPhotoIndex:
-                          asset.coverPhotoIndex == null ||
-                          asset.coverPhotoIndex === i
-                            ? null
-                            : asset.coverPhotoIndex > i
-                              ? asset.coverPhotoIndex - 1
-                              : asset.coverPhotoIndex,
-                      })
+                      setLabelPhotos((photos) =>
+                        photos.filter((_, index) => index !== i),
+                      )
                     }
                   >
                     <Trash2 />
@@ -513,7 +715,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             ) : (
               <span>
                 <FileText />
-                No photo attached
+                No label photo retained
               </span>
             )}
           </div>
@@ -521,27 +723,19 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             {recognizing
               ? "Reading label with the server provider… Your edits will be preserved."
               : recognitionNotice ||
-                "Enter only details you can read from the device. Live OCR requires secure server configuration; no extraction has been performed."}
+                "Check the serial against the device. Label photos are temporary and are not saved with the asset."}
             {recognizing && (
               <Button variant="quiet" onClick={cancelRecognition}>
                 Cancel recognition
               </Button>
             )}
           </Notice>
-          {!!asset.photos.length && (
+          {!!labelPhotos.length && (
             <div className="photo-review-actions">
               <Button
                 variant="secondary"
-                disabled={
-                  recognizing ||
-                  !ocrEnabled ||
-                  !asset.photos.some((_, i) => i !== asset.coverPhotoIndex)
-                }
-                onClick={() =>
-                  void readLabel(
-                    asset.photos.filter((_, i) => i !== asset.coverPhotoIndex),
-                  )
-                }
+                disabled={recognizing || !ocrEnabled || !labelPhotos.length}
+                onClick={() => void readLabel(labelPhotos)}
               >
                 Read label
               </Button>
@@ -557,16 +751,29 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </Button>
             </div>
           )}
-          <DevicePhoto
-            asset={asset}
-            setAsset={setAsset}
-            onBusy={setPreparing}
-          />
-          <form onSubmit={continueReview}>
+
+          <form onSubmit={continueReview} noValidate>
             <AssetFields
               asset={asset}
-              setAsset={setAsset}
+              setAsset={changeAsset}
+              assigned={Boolean(assignee)}
               nameRequired={false}
+              assignmentControls={
+                <Field
+                  label="Assign to"
+                  hint="Choose the person using this device, or leave it unassigned in storage."
+                >
+                  <Select
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value)}
+                  >
+                    <option value="">Unassigned — in storage</option>
+                    {people.map((p) => (
+                      <option key={p.name}>{p.name}</option>
+                    ))}
+                  </Select>
+                </Field>
+              }
             />
             {!asset.serial && (
               <label className="check unknown-check">
@@ -576,12 +783,12 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                   onChange={(e) => setUnknownConfirmed(e.target.checked)}
                 />
                 {canWrite
-                  ? "Serial is missing or unreadable. Save as Unknown and review later."
+                  ? "Serial is missing or unreadable. I searched inventory and could not find this device; save as Unknown for later review."
                   : "Serial is missing or unreadable. Read-only lookup needs a serial or inventory search."}
               </label>
             )}
             <div className="sticky-actions">
-              <Button disabled={checking || preparing}>
+              <Button disabled={checking || preparing || recognizing}>
                 {checking ? "Finding asset…" : "Continue"}
               </Button>
               <Button
@@ -599,6 +806,42 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </Button>
             </div>
           </form>
+        </section>
+      ) : step === 2 ? (
+        <section className="device-photo-stage" key="device-photo">
+          <div className="scan-heading">
+            <h1>Add a device photo.</h1>
+            <p>
+              A clear photo of the whole device becomes its inventory thumbnail.
+              The label photo is for reading only.
+            </p>
+          </div>
+          <DevicePhoto
+            asset={asset}
+            setAsset={setAsset}
+            onBusy={setPreparing}
+          />
+          <div className="sticky-actions">
+            <Button
+              disabled={preparing}
+              onClick={() => {
+                setLabelPhotos([]);
+                setStep(3);
+                window.scrollTo({ top: 0, behavior: "instant" });
+              }}
+            >
+              {asset.coverPhotoIndex != null
+                ? "Use device photo"
+                : "Skip for now"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={preparing}
+              onClick={() => setStep(1)}
+            >
+              Back to details
+            </Button>
+          </div>
         </section>
       ) : (
         <section className="confirm-stage" key="confirm">
@@ -646,11 +889,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </div>
               <div>
                 <dt>Location</dt>
-                <dd>{asset.location}</dd>
+                <dd>{asset.location || "With assignee"}</dd>
               </div>
               <div>
                 <dt>Assigned to</dt>
-                <dd>Unassigned</dd>
+                <dd>{assignee || "Unassigned"}</dd>
               </div>
               <div>
                 <dt>Purchase cost</dt>

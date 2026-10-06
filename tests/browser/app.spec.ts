@@ -66,6 +66,7 @@ async function newIntake(page: Page, serial: string) {
   await page.getByLabel("Serial number", { exact: true }).fill(serial);
   await page.getByLabel("I checked this serial").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ready to register." }),
   ).toBeVisible();
@@ -162,6 +163,9 @@ for (const width of [320, 360, 390, 430, 768, 1280, 1440])
         animations: "disabled",
       });
     await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Skip for now", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Ready to register." }),
     ).toBeVisible();
@@ -225,6 +229,7 @@ test("interrupted save retries same request, back and refresh preserve draft", a
     "DEMO-RETRY",
   );
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await page.getByRole("button", { name: "Save asset", exact: true }).click();
   await expect(
     page.getByText("Connection interrupted.", { exact: false }),
@@ -357,6 +362,7 @@ test("unknown serial is explicit and lookup preserves meaningful internal charac
   ).toBeVisible();
   await page.getByLabel("Serial is missing or unreadable").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ready to register." }),
   ).toBeVisible();
@@ -483,7 +489,7 @@ test("valid photo, cancellation of delayed preparation and retake preserve draft
   ).toBeVisible();
   await expect(page.getByAltText("Asset photo 1")).toBeVisible();
   await page.getByRole("button", { name: "Remove photo 1" }).click();
-  await expect(page.getByText("No photo attached")).toBeVisible();
+  await expect(page.getByText("No label photo retained")).toBeVisible();
 });
 test("real browser save, edit and assignment are confirmed by local API", async ({
   page,

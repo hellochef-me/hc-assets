@@ -18,12 +18,14 @@ export function MoveDialog({
   open,
   onClose,
   onSaved,
+  onReload,
 }: {
   asset: Asset;
   people: Person[];
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  onReload: () => void;
 }) {
   const { source } = useSource();
   const [action, setAction] = useState<(typeof movements)[number]>(
@@ -91,9 +93,15 @@ export function MoveDialog({
             value={action}
             onChange={(e) => setAction(e.target.value as typeof action)}
           >
-            {movements.map((m) => (
-              <option key={m}>{m}</option>
-            ))}
+            {movements
+              .filter((m) =>
+                asset.assignee
+                  ? m !== "Assign"
+                  : !["Transfer", "Return"].includes(m),
+              )
+              .map((m) => (
+                <option key={m}>{m}</option>
+              ))}
           </Select>
         </Field>
         {["Assign", "Transfer"].includes(action) && (
@@ -148,10 +156,21 @@ export function MoveDialog({
           Recorded as{" "}
           {source?.kind === "demo"
             ? "Demo operator"
-            : "Local operator (authentication deferred)"}{" "}
+            : source?.accessMode === "public"
+              ? "Public visitor (sign-in deferred)"
+              : "Local operator (authentication deferred)"}{" "}
           with server time.
         </Notice>
-        {error && <Notice warning>{error}</Notice>}
+        {error && (
+          <Notice warning>
+            {error}
+            {/changed|Reload/i.test(error) && (
+              <Button type="button" variant="quiet" onClick={onReload}>
+                Reload latest asset
+              </Button>
+            )}
+          </Notice>
+        )}
         <div className="dialog-actions">
           <Button
             type="button"

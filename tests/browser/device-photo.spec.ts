@@ -48,6 +48,19 @@ for (const width of [390, 1280])
     await expect(
       page.getByRole("heading", { name: "Review the label." }),
     ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          JSON.parse(sessionStorage.getItem("hcassets.demo.registration.v2")!)
+            .asset.photos,
+      ),
+    ).toEqual([]);
+    await page
+      .getByLabel("Asset name", { exact: true })
+      .fill("Fictional device");
+    await page.getByLabel("Serial number", { exact: true }).fill("PHOTO-123");
+    await page.getByLabel("I checked this serial").check();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     const card = page.getByRole("region", { name: "Device thumbnail" });
     await expect(card.locator(".device img")).toHaveCount(0);
     await expect(
@@ -64,15 +77,19 @@ for (const width of [390, 1280])
         JSON.parse(sessionStorage.getItem("hcassets.demo.registration.v2")!)
           .asset,
     );
-    expect(draft.coverPhotoIndex).toBe(1);
+    expect(draft.coverPhotoIndex).toBe(0);
     expect(await card.locator(".device img").getAttribute("src")).toBe(
-      draft.photos[1],
+      draft.photos[0],
     );
     await page.reload();
     await expect(card.locator(".device img")).toBeVisible();
     await page
-      .getByRole("button", { name: "Remove photo 1", exact: true })
+      .getByRole("button", { name: "Back to details", exact: true })
       .click();
+    await expect(
+      page.getByText("No label photo retained", { exact: false }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await expect(card.locator(".device img")).toBeVisible();
     const retained = await page.evaluate(
       () =>

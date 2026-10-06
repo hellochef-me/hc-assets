@@ -2243,3 +2243,21 @@ dialog > form {
   font-size: 13px;
 }
 
+.duplicate-review,
+.edit-assignment {
+  padding: 24px;
+  margin-block: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff9f4;
+}
+.duplicate-review p,
+.edit-assignment p {
+  margin-block: 12px;
+}
+.duplicate-review .check {
+  margin-top: 20px;
+}
+.duplicate-record strong {
+  overflow-wrap: anywhere;
+}
