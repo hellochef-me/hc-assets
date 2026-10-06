@@ -31,3 +31,11 @@ The dev/start scripts bind 127.0.0.1. API requests reject non-loopback hosts/for
 ## Before live integration
 
 Follow the exact configuration, staging approval and acceptance checkpoints in [SECURE-HANDOFF.md](SECURE-HANDOFF.md). Authentication, production monitoring/admin reconciliation and private photo retention remain production work. Release is now authorized, pending hosted access and persistence checks. Local intended inventory saves, existing-credential reuse and Vercel environment preparation are explicitly approved; release still requires hosted access, durable writer and shared quotas.
+
+## Approved public hosted release
+
+Production APIs are explicitly public at assets.hellochef.me, following Anthony’s confirmation of employee/serial/photo visibility, unauthenticated inventory edits and paid AI. Exact HTTPS host and browser Origin validation remain enforced. This does not authenticate visitors; history says Public visitor (sign-in deferred). Preview deployments remain disabled and retain no production OpenAI/Google credentials.
+
+Private Vercel Blob conditional ETag writes and uncached reads coordinate the direct Sheet writer across instances. There is one non-expiring global mutex, never stolen after a timeout. Crashed/uncertain locks require operator reconciliation before any unlock; existing durable Sheet pending intents additionally freeze uncertain commands. Shared AI counters reserve each attempt atomically before transmission and fail closed on unavailable/corrupt storage. The configured 20/day and 4/minute limits count HTTP attempts, including failed attempts and multiple calls in one resale research, and are not currency caps. Photos and inventory remain in the original Sheet; Blob stores coordination records only.
+
+coverPhotoIndex selects a device picture explicitly for the thumbnail. Label evidence alone has no cover and displays a category icon. New registration asks for a device picture; existing records can add one through Edit. Photos are compressed as before and retained in the same full-asset sidecar without changing original headers/IDs.

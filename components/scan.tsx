@@ -29,6 +29,7 @@ import {
 } from "@/lib/client";
 import { Button, Notice, Device } from "./ui";
 import { AssetFields } from "./asset-fields";
+import { DevicePhoto } from "./device-photo";
 import { CameraCapture } from "./camera-capture";
 import { useSource } from "./source-context";
 import type { PhotoExtraction } from "@/lib/server/integrations";
@@ -127,7 +128,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     const photoData = [...asset.photos, data];
     setAsset((current) => ({ ...current, photos: [...current.photos, data] }));
     setStep(1);
-    void readLabel(photoData);
+    void readLabel(photoData.filter((_, i) => i !== asset.coverPhotoIndex));
   }
   useEffect(() => {
     try {
@@ -192,7 +193,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       if (token !== operation.current) return;
       setAsset((a) => ({ ...a, photos: [...a.photos, ...data] }));
       setStep(1);
-      void readLabel([...asset.photos, ...data]);
+      void readLabel(
+        [...asset.photos, ...data].filter(
+          (_, i) => i !== asset.coverPhotoIndex,
+        ),
+      );
     } catch (e) {
       if (token === operation.current) setError((e as Error).message);
     } finally {
@@ -491,6 +496,13 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                       setAsset({
                         ...asset,
                         photos: asset.photos.filter((_, index) => index !== i),
+                        coverPhotoIndex:
+                          asset.coverPhotoIndex == null ||
+                          asset.coverPhotoIndex === i
+                            ? null
+                            : asset.coverPhotoIndex > i
+                              ? asset.coverPhotoIndex - 1
+                              : asset.coverPhotoIndex,
                       })
                     }
                   >
@@ -520,8 +532,16 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <div className="photo-review-actions">
               <Button
                 variant="secondary"
-                disabled={recognizing || !ocrEnabled}
-                onClick={() => void readLabel(asset.photos)}
+                disabled={
+                  recognizing ||
+                  !ocrEnabled ||
+                  !asset.photos.some((_, i) => i !== asset.coverPhotoIndex)
+                }
+                onClick={() =>
+                  void readLabel(
+                    asset.photos.filter((_, i) => i !== asset.coverPhotoIndex),
+                  )
+                }
               >
                 Read label
               </Button>
@@ -537,6 +557,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </Button>
             </div>
           )}
+          <DevicePhoto
+            asset={asset}
+            setAsset={setAsset}
+            onBusy={setPreparing}
+          />
           <form onSubmit={continueReview}>
             <AssetFields
               asset={asset}
@@ -556,7 +581,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </label>
             )}
             <div className="sticky-actions">
-              <Button disabled={checking}>
+              <Button disabled={checking || preparing}>
                 {checking ? "Finding asset…" : "Continue"}
               </Button>
               <Button

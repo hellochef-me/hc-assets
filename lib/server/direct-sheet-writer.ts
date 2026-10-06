@@ -17,6 +17,7 @@ export class DirectSheetWriter {
     private token: () => Promise<string>,
     private fetcher: typeof fetch = fetch,
     private directory = path.join(process.cwd(), ".local"),
+    private sharedLock?: () => Promise<() => Promise<void>>,
   ) {
     if (!spreadsheetId)
       throw new ProviderError("configuration", "The Sheet ID is missing.");
@@ -43,18 +44,24 @@ export class DirectSheetWriter {
         "invalid",
         "Invalid writer identity or asset reference.",
       );
-    await mkdir(this.directory, { recursive: true, mode: 0o700 });
-    const lock = path.join(
-      this.directory,
-      `sheet-writer-${createHash("sha256").update(this.spreadsheetId).digest("hex").slice(0, 20)}.lock`,
-    );
-    try {
-      await mkdir(lock);
-    } catch {
-      throw new SheetGatewayError(
-        "busy",
-        "The local writer is busy or needs recovery. Retry the same request ID.",
+    let release: () => Promise<void>;
+    if (this.sharedLock) {
+      release = await this.sharedLock();
+    } else {
+      await mkdir(this.directory, { recursive: true, mode: 0o700 });
+      const lock = path.join(
+        this.directory,
+        `sheet-writer-${createHash("sha256").update(this.spreadsheetId).digest("hex").slice(0, 20)}.lock`,
       );
+      try {
+        await mkdir(lock);
+      } catch {
+        throw new SheetGatewayError(
+          "busy",
+          "The local writer is busy or needs recovery. Retry the same request ID.",
+        );
+      }
+      release = () => rm(lock, { recursive: true, force: true });
     }
     try {
       const accessToken = await this.token();
@@ -129,7 +136,7 @@ export class DirectSheetWriter {
         );
       }
     } finally {
-      await rm(lock, { recursive: true, force: true });
+      await release();
     }
   }
 }

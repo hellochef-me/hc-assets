@@ -2,6 +2,7 @@ import { guard, json, failure, body } from "@/lib/server/http";
 import { intelligence } from "@/lib/server/backend";
 import { z } from "zod";
 export const runtime = "nodejs";
+export const maxDuration = 180;
 export async function POST(r: Request) {
   try {
     guard(r);

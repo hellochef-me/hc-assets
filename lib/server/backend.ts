@@ -16,6 +16,7 @@ import { ControlledSheetReader } from "./sheet-snapshot";
 import { DirectSheetWriter } from "./direct-sheet-writer";
 import { OpenAiAssetIntelligence } from "./openai-intelligence";
 import { budgetedFetch } from "./ai-budget";
+import { hosted, acquireHostedWriter } from "./hosted-coordination";
 export const existingSheetId = "1ZeV0krMc_ZeH2e-iOd9ft5jMvGwNcCtu4SPYYXI0x_A";
 const importedSchema = z
   .object({
@@ -97,6 +98,7 @@ export async function previewSource(
   )
     return {
       kind: backend,
+      accessMode: hosted() ? "public" : "local",
       label:
         backend === "staging"
           ? "Staging Sheet"
@@ -188,7 +190,17 @@ export async function backendCommit(
         ? existingSheetId
         : process.env.HC_ASSETS_SPREADSHEET_ID!,
       googleWriteToken,
-    ).commit(action, data, "Local operator (authentication deferred)", id);
+      fetch,
+      undefined,
+      hosted() ? acquireHostedWriter : undefined,
+    ).commit(
+      action,
+      data,
+      hosted()
+        ? "Public visitor (sign-in deferred)"
+        : "Local operator (authentication deferred)",
+      id,
+    );
   if (writer !== "gateway")
     throw new StoreError("Unsupported Sheet writer configuration.", 503);
   const gateway = new ControlledSheetGateway({

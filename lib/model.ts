@@ -60,12 +60,19 @@ const assetDraftInput = z
     purchaseCurrency: z.string().trim().max(10),
     purchaseDate: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/),
     photos: z.array(photo).max(3),
+    coverPhotoIndex: z.number().int().min(0).max(2).nullable().optional(),
     serialChecked: z.boolean(),
     specsChecked: z.boolean(),
     conditionChecked: z.boolean(),
   })
   .strict()
   .superRefine((a, ctx) => {
+    if (a.coverPhotoIndex != null && a.coverPhotoIndex >= a.photos.length)
+      ctx.addIssue({
+        code: "custom",
+        path: ["coverPhotoIndex"],
+        message: "Choose an attached device photo for the thumbnail.",
+      });
     if (a.serial && !a.serialChecked)
       ctx.addIssue({
         code: "custom",
@@ -122,6 +129,7 @@ export interface Snapshot {
   source?: PreviewSource;
 }
 export interface PreviewSource {
+  accessMode?: "public" | "local";
   kind: "demo" | "sheet-snapshot" | "staging" | "live-readonly" | "live";
   label: string;
   readOnly: boolean;
@@ -207,6 +215,7 @@ export function blankAsset(): AssetInput {
     purchaseCurrency: "AED",
     purchaseDate: "",
     photos: [],
+    coverPhotoIndex: null,
     serialChecked: false,
     specsChecked: false,
     conditionChecked: false,
@@ -280,4 +289,14 @@ export function inputOf(a: Asset): AssetInput {
   return Object.fromEntries(
     Object.keys(base).map((k) => [k, a[k as keyof AssetInput]]),
   ) as AssetInput;
+}
+
+export function thumbnailPhoto(asset: {
+  photos: string[];
+  coverPhotoIndex?: number | null;
+}) {
+  return Number.isInteger(asset.coverPhotoIndex) &&
+    asset.coverPhotoIndex != null
+    ? asset.photos[asset.coverPhotoIndex] || null
+    : null;
 }

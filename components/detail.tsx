@@ -22,6 +22,7 @@ import {
 import { ApiError, request } from "@/lib/client";
 import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Timeline, Dialog, date } from "./ui";
+import { DevicePhoto } from "./device-photo";
 import { AssetFields } from "./asset-fields";
 import { MoveDialog } from "./move-dialog";
 import { AssetNotes } from "./asset-notes";
@@ -45,6 +46,7 @@ export function Detail({ id }: { id: string }) {
     [draft, setDraft] = useState<AssetInput | null>(null),
     [move, setMove] = useState(false),
     [saving, setSaving] = useState(false),
+    [preparingPhoto, setPreparingPhoto] = useState(false),
     [saveError, setSaveError] = useState(""),
     [duplicate, setDuplicate] = useState(""),
     [resaleError, setResaleError] = useState(""),
@@ -398,6 +400,19 @@ export function Detail({ id }: { id: string }) {
       >
         {draft && (
           <form onSubmit={save}>
+            <DevicePhoto
+              asset={draft}
+              setAsset={(next) =>
+                setDraft((current) =>
+                  current
+                    ? typeof next === "function"
+                      ? next(current)
+                      : next
+                    : null,
+                )
+              }
+              onBusy={setPreparingPhoto}
+            />
             <AssetFields
               asset={draft}
               setAsset={setDraft}
@@ -434,7 +449,7 @@ export function Detail({ id }: { id: string }) {
               >
                 Cancel
               </Button>
-              <Button disabled={saving}>
+              <Button disabled={saving || preparingPhoto}>
                 {saving ? "Saving changes…" : "Save changes"}
               </Button>
             </div>

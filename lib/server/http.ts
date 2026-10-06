@@ -13,6 +13,28 @@ export function guard(request: Request) {
     `${u.protocol}//${request.headers.get("host") || u.host}`,
   );
   if (
+    process.env.VERCEL_ENV === "production" &&
+    process.env.HC_ASSETS_PUBLIC_ACCESS === "approved"
+  ) {
+    if (
+      incoming.hostname !== "assets.hellochef.me" ||
+      incoming.port ||
+      u.protocol !== "https:"
+    )
+      throw new StoreError(
+        "Use https://assets.hellochef.me to access inventory.",
+        403,
+      );
+    const origin = request.headers.get("origin");
+    if (
+      (origin && origin !== "https://assets.hellochef.me") ||
+      (!["GET", "HEAD"].includes(request.method) && !origin) ||
+      request.headers.get("sec-fetch-site") === "cross-site"
+    )
+      throw new StoreError("Invalid request origin.", 403);
+    return;
+  }
+  if (
     !["localhost", "127.0.0.1", "[::1]"].includes(u.hostname) ||
     !["localhost", "127.0.0.1", "[::1]"].includes(incoming.hostname) ||
     (request.headers

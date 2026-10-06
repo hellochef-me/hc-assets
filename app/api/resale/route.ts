@@ -3,6 +3,7 @@ import { backendSnapshot, intelligence } from "@/lib/server/backend";
 import { StoreError } from "@/lib/server/store";
 import { z } from "zod";
 export const runtime = "nodejs";
+export const maxDuration = 180;
 export async function POST(r: Request) {
   try {
     guard(r);

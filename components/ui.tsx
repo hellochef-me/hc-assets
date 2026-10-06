@@ -1,4 +1,5 @@
 "use client";
+import { thumbnailPhoto } from "@/lib/model";
 import {
   ButtonHTMLAttributes,
   ReactNode,
@@ -111,7 +112,7 @@ export function Device({
   asset,
   large = false,
 }: {
-  asset: Pick<Asset, "category" | "photos" | "name">;
+  asset: Pick<Asset, "category" | "photos" | "name" | "coverPhotoIndex">;
   large?: boolean;
 }) {
   const Icon =
@@ -128,8 +129,8 @@ export function Device({
               : Package;
   return (
     <div className={`device ${large ? "large" : ""}`} aria-hidden="true">
-      {asset.photos[0] ? (
-        <img src={asset.photos[0]} alt="" />
+      {thumbnailPhoto(asset) ? (
+        <img src={thumbnailPhoto(asset)!} alt="" />
       ) : (
         <Icon strokeWidth={1.3} />
       )}

@@ -17,7 +17,9 @@ export default function Page() {
               ? "Real values read through the existing authorized Sheets connection. This is a timestamped snapshot, not continuous live synchronization. Refreshing this page reloads the snapshot; an authorized Sheet reread is needed to update it."
               : source?.readOnly
                 ? "Authenticated server reads; writes disabled."
-                : "Controlled local Sheet backend. Writes require approved configuration and exclusive writer ownership."}
+                : source?.accessMode === "public"
+                  ? "Live Sheet connection. Saves are confirmed through the shared writer."
+                  : "Controlled local Sheet backend. Writes require approved configuration and exclusive writer ownership."}
         </Notice>
         {error && <Notice warning>{error}</Notice>}
         <dl>
@@ -63,13 +65,17 @@ export default function Page() {
             <dt>Resale research</dt>
             <dd>
               {(source?.resaleEnabled ?? source?.aiEnabled)
-                ? "Current cited AED sources; may return no comparable"
+                ? "Indicative AED scenarios, verified listings when available and clearly labeled model estimates"
                 : "Not configured · no estimate fabricated"}
             </dd>
           </div>
           <div>
             <dt>Authentication</dt>
-            <dd>Deferred · this Mac’s loopback preview only</dd>
+            <dd>
+              {source?.accessMode === "public"
+                ? "Public access · sign-in deferred"
+                : "Deferred · this Mac’s loopback preview only"}
+            </dd>
           </div>
         </dl>
         <Button variant="secondary" onClick={reload}>

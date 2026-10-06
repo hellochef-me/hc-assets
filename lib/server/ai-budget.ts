@@ -5,6 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 import { StoreError } from "./store";
 import { ProviderError } from "./provider-http";
+import { hosted, reserveHostedAiRequest } from "./hosted-coordination";
 const stateSchema = z
   .object({
     day: z.string(),
@@ -79,7 +80,7 @@ function boundedLimit(
 }
 export const budgetedFetch: typeof fetch = async (url, init) => {
   try {
-    await reserveAiRequest(undefined, {
+    const limits = {
       daily: boundedLimit(
         process.env.HC_ASSETS_AI_DAILY_REQUEST_LIMIT,
         20,
@@ -90,7 +91,9 @@ export const budgetedFetch: typeof fetch = async (url, init) => {
         4,
         20,
       ),
-    });
+    };
+    if (hosted()) await reserveHostedAiRequest(limits);
+    else await reserveAiRequest(undefined, limits);
   } catch (e) {
     if (e instanceof StoreError)
       throw new ProviderError(

@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, RotateCcw, X } from "lucide-react";
 import { Button, Notice } from "./ui";
 export function CameraCapture({
+  purpose = "label",
   onCaptured,
   onCancel,
   onUpload,
   onNativeCapture,
 }: {
+  purpose?: "label" | "device";
   onCaptured: (photo: string) => void;
   onCancel: () => void;
   onUpload: () => void;
@@ -151,6 +153,7 @@ export function CameraCapture({
       <div className="camera-live-heading">
         <h2>{state === "review" ? "Check your photo" : "Device camera"}</h2>
         <Button
+          type="button"
           variant="quiet"
           aria-label="Close camera"
           onClick={() => {
@@ -171,7 +174,14 @@ export function CameraCapture({
           aria-label="Live camera preview"
         />
         {photo && (
-          <img src={photo} alt="Captured device label awaiting confirmation" />
+          <img
+            src={photo}
+            alt={
+              purpose === "device"
+                ? "Captured device photo awaiting confirmation"
+                : "Captured device label awaiting confirmation"
+            }
+          />
         )}
         {state === "starting" && (
           <p role="status">
@@ -182,25 +192,32 @@ export function CameraCapture({
       {error && <Notice warning>{error}</Notice>}
       <div className="camera-live-actions">
         {state === "ready" ? (
-          <Button onClick={capture}>
+          <Button type="button" onClick={capture}>
             <Camera />
             Capture photo
           </Button>
         ) : state === "review" ? (
           <>
-            <Button onClick={() => onCaptured(photo)}>Use photo</Button>
-            <Button variant="secondary" onClick={() => void start()}>
+            <Button type="button" onClick={() => onCaptured(photo)}>
+              Use photo
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void start()}
+            >
               <RotateCcw />
               Retake
             </Button>
           </>
         ) : state === "error" ? (
-          <Button onClick={() => void start()}>
+          <Button type="button" onClick={() => void start()}>
             <RotateCcw />
             Retry camera
           </Button>
         ) : null}
         <Button
+          type="button"
           variant="secondary"
           onClick={() => {
             stop();
@@ -210,6 +227,7 @@ export function CameraCapture({
           Use device camera
         </Button>
         <Button
+          type="button"
           variant="secondary"
           onClick={() => {
             stop();
@@ -219,6 +237,7 @@ export function CameraCapture({
           Upload photo instead
         </Button>
         <Button
+          type="button"
           variant="quiet"
           onClick={() => {
             stop();

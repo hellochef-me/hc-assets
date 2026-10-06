@@ -2224,3 +2224,20 @@ dialog > form {
   margin-top: 8px;
   line-height: 1.5;
 }
+
+.device-photo-card {
+  padding: 20px;
+  margin: 20px 0;
+}
+.device-photo-card h2 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+.device-photo-card p {
+  color: var(--muted);
+  margin: 0;
+}
+.device-photo-card .fine-print {
+  margin-top: 12px;
+  font-size: 13px;
+}
