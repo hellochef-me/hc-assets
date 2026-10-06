@@ -3154,3 +3154,138 @@ dialog > form {
     flex: 0 0 auto;
   }
 }
+/* Initial scan entry matches docs/design/scan-entry-reference.png. */
+body:has(.scan-entry-page) {
+  background: #fff;
+}
+.scan-page.scan-entry-page {
+  max-width: 508px;
+  padding: 32px 24px 48px;
+}
+.entry-step-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 28px 0 10px;
+}
+.entry-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 36px;
+  padding: 0;
+}
+.entry-progress li {
+  height: 5px;
+  background: #e4e2e3;
+  border-radius: 4px;
+  font-size: 0;
+}
+.entry-progress li.complete {
+  background: #cf351f;
+}
+.entry-progress li > span {
+  display: none;
+}
+.entry-scan-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 13px;
+  background: #fff0eb;
+  color: #cf351f;
+  margin-bottom: 22px;
+}
+.entry-scan-icon svg {
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.8;
+}
+.entry-heading h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  margin: 0;
+}
+.entry-heading p {
+  margin: 10px 0 28px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.entry-actions {
+  display: grid;
+  gap: 12px;
+  padding: 24px 20px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+.entry-actions .button {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+.entry-actions .primary {
+  background: #cf351f;
+  border-color: #cf351f;
+}
+.entry-actions .primary:hover {
+  background: #b62b19;
+}
+.entry-actions .secondary {
+  background: #fff;
+  color: var(--ink);
+  border-color: #d9d6d5;
+}
+.entry-actions .quiet {
+  font-weight: 400;
+  color: var(--ink);
+}
+.entry-privacy {
+  display: flex;
+  gap: 12px;
+  margin-top: 26px;
+  color: var(--muted);
+}
+.entry-privacy > svg {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: var(--ink);
+}
+.entry-privacy p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.entry-privacy small {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.entry-file-note {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.entry-provider-note {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 16px;
+}
+@media (max-width: 600px) {
+  .scan-page.scan-entry-page {
+    padding-top: 24px;
+  }
+  .entry-progress {
+    margin-bottom: 32px;
+  }
+}

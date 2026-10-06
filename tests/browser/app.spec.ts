@@ -144,7 +144,7 @@ for (const width of [320, 360, 390, 430, 768, 1280, 1440])
       });
     await page.goto("/scan");
     await expect(
-      page.getByRole("heading", { name: "Start with the label." }),
+      page.getByRole("heading", { name: "Scan a label" }),
     ).toBeVisible();
     await noOverflow(page);
     if (width === 390 || width === 1440)
@@ -485,7 +485,7 @@ test("valid photo, cancellation of delayed preparation and retake preserve draft
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.waitForTimeout(1400);
   await expect(
-    page.getByRole("heading", { name: "Start with the label." }),
+    page.getByRole("heading", { name: "Scan a label" }),
   ).toBeVisible();
   await page
     .getByLabel("Upload asset photos")

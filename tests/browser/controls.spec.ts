@@ -48,7 +48,7 @@ test("fake device camera preview/capture/retake/use stops streams and preserves 
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/scan");
-  await page.getByRole("button", { name: "Take photo", exact: true }).click();
+  await page.getByRole("button", { name: "Open camera", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Capture photo", exact: true }),
   ).toBeVisible();
@@ -101,7 +101,9 @@ test("camera permission denial/no device/busy explains fallback; cancel never fa
         throw new DOMException("Fixture failure", name);
       };
     }, name);
-    await page.getByRole("button", { name: "Take photo", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open camera", exact: true })
+      .click();
     await expect(
       page.getByRole("button", { name: "Retry camera" }),
     ).toBeVisible();
@@ -112,7 +114,7 @@ test("camera permission denial/no device/busy explains fallback; cancel never fa
       .getByRole("button", { name: "Close camera", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Start with the label." }),
+      page.getByRole("heading", { name: "Scan a label" }),
     ).toBeVisible();
   }
 });
@@ -139,7 +141,7 @@ test("closing during pending permission stops a late stream and leaves capture u
       return stream;
     };
   });
-  await page.getByRole("button", { name: "Take photo", exact: true }).click();
+  await page.getByRole("button", { name: "Open camera", exact: true }).click();
   await page.getByRole("button", { name: "Close camera", exact: true }).click();
   await expect
     .poll(() =>
@@ -149,7 +151,7 @@ test("closing during pending permission stops a late stream and leaves capture u
     )
     .toBeGreaterThan(0);
   await expect(
-    page.getByRole("heading", { name: "Start with the label." }),
+    page.getByRole("heading", { name: "Scan a label" }),
   ).toBeVisible();
 });
 test("camera releases device on Escape, route unmount and page hiding", async ({
@@ -176,7 +178,9 @@ test("camera releases device on Escape, route unmount and page hiding", async ({
   });
   for (const cleanup of ["escape", "navigate", "hide"]) {
     await page.goto("/scan");
-    await page.getByRole("button", { name: "Take photo", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open camera", exact: true })
+      .click();
     await expect(
       page.getByRole("button", { name: "Capture photo", exact: true }),
     ).toBeVisible();

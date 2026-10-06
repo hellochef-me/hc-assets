@@ -1,0 +1,14 @@
+Use case: ui-mockup. Generate the missing Hello Assets scan ENTRY screen before any photo has been taken. Use the attached approved board strictly as the visual reference: clean white/very pale warm canvas, dark modern sans-serif text, restrained coral primary action, fine borders and quiet spacing. Do not reproduce the photographic viewfinder from that board on this initial state.
+Produce a high fidelity design board showing a straight-on 390px mobile screen on the left and the same screen in a desktop browser on the right. Title outside screens "Hello Assets — start a scan". No decorative device bezels or shadows. No Hello Chef logo.
+Exact hierarchy inside both screens:
+small header "Hello Assets" and a menu icon (desktop horizontal nav Inventory, Scan, People).
+Back link "Inventory".
+One quiet small progress line "Step 1 of 4" with four thin segments, first coral. No numbered circles or registration badge.
+A small coral scan-line icon in a 48px pale-coral square.
+Heading "Scan a label" at 30px mobile, compact bold sans serif.
+One concise description "Read the serial to find or register a device."
+24px gap then one white card with a thin warm-gray border, 16px radius, 24px padding.
+Inside card: one full-width rectangular coral primary button with camera icon "Open camera", height52px, radius10px. Beneath: full-width white outlined button with image icon "Upload photo", same height, separated by12px. Beneath: centered quiet text action "Enter manually". No other action buttons.
+Below card a small shield-check line icon with concise gray text "Label photos are read, then discarded." and below that a small single sentence "We'll check for an existing asset first."
+Below a little muted footer "JPG, PNG or WebP · Up to 20 MB".
+Desktop is a narrow centered 460px workflow, not a wide stretched form; mobile uses24px outer margins, top aligned and natural whitespace below. All copy left aligned except actions. Realistic compact responsive spacing. No giant camera illustration, no dark frame, no dashed borders, no shutter circle on this screen, no device photo, no sample data, no marketing claims. The primary action opens the separate full-screen camera already designed. Modern quiet utilitarian polish, match the original reference's restraint.

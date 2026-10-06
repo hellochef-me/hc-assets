@@ -73,7 +73,7 @@ test("exact OCR match opens the existing asset without a registration submission
   expect(state.creates()).toBe(0);
   await page.goto("/scan");
   await expect(
-    page.getByRole("heading", { name: "Start with the label." }),
+    page.getByRole("heading", { name: "Scan a label" }),
   ).toBeVisible();
 });
 test("missing OCR character requires comparison before proceeding and opens existing without saving", async ({

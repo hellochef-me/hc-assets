@@ -7,7 +7,7 @@ import {
   ImagePlus,
   ArrowLeft,
   ScanLine,
-  Sun,
+  ShieldCheck,
   Check,
   Trash2,
   FileText,
@@ -490,24 +490,31 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   }
   if (!ready) return <div className="loading">Restoring registration…</div>;
   const progressStep = recognizing || readIssue ? 0 : step;
+  const entry = step === 0 && !recognizing && !checking && !readIssue;
   return (
-    <div className="page scan-page">
+    <div className={`page scan-page ${entry ? "scan-entry-page" : ""}`}>
       <div className="scan-top">
         <Link href="/" className="back-link">
           <ArrowLeft />
           Inventory
         </Link>
-        <span className="demo-badge">
-          {source?.kind === "demo"
-            ? "Demo registration"
-            : source?.readOnly
-              ? "Read-only lookup"
-              : source?.kind === "staging"
-                ? "Staging registration"
-                : "Asset registration"}
-        </span>
+        {!entry && (
+          <span className="demo-badge">
+            {source?.kind === "demo"
+              ? "Demo registration"
+              : source?.readOnly
+                ? "Read-only lookup"
+                : source?.kind === "staging"
+                  ? "Staging registration"
+                  : "Asset registration"}
+          </span>
+        )}
       </div>
-      <ol className="steps" aria-label="Registration progress">
+      {entry && <p className="entry-step-label">Step 1 of 4</p>}
+      <ol
+        className={entry ? "entry-progress" : "steps"}
+        aria-label="Registration progress"
+      >
         {["Label", "Details", "Device photo", "Confirm"].map((s, i) => (
           <li
             key={s}
@@ -580,20 +587,14 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         />
       ) : step === 0 ? (
         <section className="capture-stage">
-          <div className="scan-heading">
-            <p className="eyebrow">LET’S GET IT REGISTERED</p>
-            <h1>Start with the label.</h1>
-            <p>
-              Capture the serial number clearly. Already registered? We’ll open
-              the asset. Label photos are used for reading only and are not
-              saved.
-            </p>
-            <span className="light-tip">
-              <Sun />
-              Good lighting helps
+          <div className="entry-heading">
+            <span className="entry-scan-icon" aria-hidden="true">
+              <ScanLine />
             </span>
+            <h1>Scan a label</h1>
+            <p>Read the serial to find or register a device.</p>
           </div>
-          {cameraOpen ? (
+          {cameraOpen && (
             <CameraCapture
               onCaptured={captured}
               onCancel={() => setCameraOpen(false)}
@@ -606,46 +607,38 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 cameraInput.current?.click();
               }}
             />
-          ) : (
-            <div className="camera-stage">
-              <div className="capture-frame">
-                <ScanLine />
-                <p>Keep the whole label in view</p>
-                <small>Use your phone camera or choose a photo</small>
-              </div>
-              <div className="capture-controls">
-                <Button
-                  variant="secondary"
-                  aria-label="Upload photo"
-                  onClick={() => photoInput.current?.click()}
-                  disabled={preparing}
-                >
-                  <ImagePlus />
-                  Upload
-                </Button>
-                <Button
-                  className="shutter"
-                  aria-label="Take photo"
-                  onClick={() => setCameraOpen(true)}
-                  disabled={preparing}
-                >
-                  <Camera />
-                </Button>
-                <Button
-                  variant="quiet"
-                  disabled={preparing}
-                  onClick={() => {
-                    setStep(1);
-                    setError("");
-                  }}
-                >
-                  Enter
-                  <br />
-                  manually
-                </Button>
-              </div>
-            </div>
           )}
+          <div className="entry-actions">
+            <Button onClick={() => setCameraOpen(true)} disabled={preparing}>
+              <Camera />
+              Open camera
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => photoInput.current?.click()}
+              disabled={preparing}
+            >
+              <ImagePlus />
+              Upload photo
+            </Button>
+            <Button
+              variant="quiet"
+              disabled={preparing}
+              onClick={() => {
+                setStep(1);
+                setError("");
+              }}
+            >
+              Enter manually
+            </Button>
+          </div>
+          <div className="entry-privacy">
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <p>Label photos are read, then discarded.</p>
+              <small>We’ll check for an existing asset first.</small>
+            </div>
+          </div>
           <input
             hidden
             ref={cameraInput}
@@ -672,13 +665,15 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </Button>
             </Notice>
           )}
-          <p className="capture-help">
-            JPG, PNG or WebP · Up to 3 photos · 20 MB per original
-            <br />
-            {ocrEnabled
-              ? "Server recognition runs after a photo is attached. You review every suggestion."
-              : "Live OCR is not configured. Camera capture and uploads work; enter label details manually."}
+          <p className="entry-file-note">
+            JPG, PNG or WebP · Up to 20 MB per photo
           </p>
+          {!ocrEnabled && (
+            <p className="entry-provider-note">
+              Live OCR is not configured. You can attach a photo and enter the
+              label details manually.
+            </p>
+          )}
           {source?.kind === "demo" && (
             <div className="demo-samples">
               <small>Explore with a fictional label</small>
