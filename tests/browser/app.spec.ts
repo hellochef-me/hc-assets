@@ -188,8 +188,9 @@ test("scan existing serial with case/outer spaces opens record directly, then ed
     .fill("  demo-c02x148  ");
   await page.getByLabel("I checked this serial").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("link", { name: /Open existing asset/ }).click();
   await expect(page).toHaveURL(/assets\/DEMO-001/);
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Edit asset" })).toBeVisible();
   await expect(page.getByLabel("Serial number", { exact: true })).toHaveValue(
     "DEMO-C02X148",
@@ -206,14 +207,14 @@ test("legacy duplicate identity requires record choice and does not merge", asyn
   await page.getByLabel("I checked this serial").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Choose an existing record" }),
+    page.getByRole("heading", { name: "This device is already registered." }),
   ).toBeVisible();
   await expect(
     page.getByText("Multiple existing records have this serial.", {
       exact: false,
     }),
   ).toBeVisible();
-  await expect(page.locator(".duplicate-record")).toHaveCount(2);
+  await expect(page.locator(".match-candidate")).toHaveCount(2);
 });
 test("interrupted save retries same request, back and refresh preserve draft", async ({
   page,
@@ -322,7 +323,7 @@ test("accessibility on mobile inventory, capture, review, detail and dialog", as
       JSON.stringify(results.violations, null, 2),
     ).toEqual([]);
   }
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -331,7 +332,7 @@ test("accessibility on mobile inventory, capture, review, detail and dialog", as
   );
   await page.keyboard.press("Escape");
   await expect(
-    page.getByRole("button", { name: "Edit", exact: true }),
+    page.getByRole("button", { name: "Edit details", exact: true }),
   ).toBeFocused();
 });
 test("long serial, orientation and reduced motion", async ({ page }) => {
@@ -381,9 +382,12 @@ test("edit collision keeps editable draft", async ({ page }) => {
     }),
   );
   await page.goto("/assets/DEMO-002");
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page.getByLabel("Serial number", { exact: true }).fill("DEMO-C02X148");
   await page.getByLabel("I checked this serial").check();
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
@@ -440,7 +444,9 @@ test("movement remains pending until confirmed, updates actor/from/to history", 
     .click();
   await page.getByRole("option", { name: "Locker", exact: true }).click();
   await page.getByLabel("Movement notes").fill("Fictional handover");
-  await page.getByRole("button", { name: "Confirm movement" }).click();
+  await page
+    .getByRole("button", { name: /Confirm (movement|assignment|reassignment)/ })
+    .click();
   await expect(page.getByRole("button", { name: "Saving…" })).toBeDisabled();
   await expect(page.getByRole("dialog")).toBeVisible();
   release();
@@ -448,7 +454,7 @@ test("movement remains pending until confirmed, updates actor/from/to history", 
   await expect(page.locator(".movement-card")).toContainText(
     "Fictional handover",
   );
-  await expect(page.locator(".assignment-bridge")).toContainText("Nora Ellis");
+  await expect(page.locator(".overview-ownership")).toContainText("Nora Ellis");
 });
 test("valid photo, cancellation of delayed preparation and retake preserve draft", async ({
   page,
@@ -501,10 +507,13 @@ test("real browser save, edit and assignment are confirmed by local API", async 
   await expect(
     page.getByText("Saved in the local demo inventory"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page
     .getByLabel("Asset name", { exact: true })
     .fill("Fictional browser save edited");
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
@@ -516,11 +525,13 @@ test("real browser save, edit and assignment are confirmed by local API", async 
   await page.getByRole("button", { name: "Move or assign" }).click();
   await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
   await page.getByRole("option", { name: "Nora Ellis", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm movement" }).click();
+  await page
+    .getByRole("button", { name: /Confirm (movement|assignment|reassignment)/ })
+    .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(page.locator(".assignment-bridge")).toContainText("Nora Ellis");
+  await expect(page.locator(".overview-ownership")).toContainText("Nora Ellis");
   await page.reload();
-  await expect(page.locator(".assignment-bridge")).toContainText("Nora Ellis");
+  await expect(page.locator(".overview-ownership")).toContainText("Nora Ellis");
 });
 test("stale edit offers latest record while retaining unconfirmed changes", async ({
   page,
@@ -537,10 +548,13 @@ test("stale edit offers latest record while retaining unconfirmed changes", asyn
     }),
   );
   await page.goto("/assets/DEMO-002");
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page
     .getByLabel("Asset name", { exact: true })
     .fill("My pending change");
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByLabel("Asset name", { exact: true })).toHaveValue(
     "My pending change",
@@ -652,10 +666,16 @@ test("assigned assets can omit storage; return and unassigned edits require a lo
   expect(assigned.status()).toBe(200);
   await page.goto(`/assets/${asset.id}`);
   await expect(page.getByText("With assignee", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "Location", exact: true }),
   ).toContainText("No storage location");
+  await page
+    .getByLabel("Asset name", { exact: true })
+    .fill("Fictional location-free edit");
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page
@@ -664,7 +684,10 @@ test("assigned assets can omit storage; return and unassigned edits require a lo
   await page.getByRole("combobox", { name: "Movement", exact: true }).click();
   await page.getByRole("option", { name: "Return", exact: true }).click();
   await page
-    .getByRole("button", { name: "Confirm movement", exact: true })
+    .getByRole("button", {
+      name: /Confirm (movement|assignment|reassignment)/,
+      exact: true,
+    })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
@@ -675,10 +698,13 @@ test("assigned assets can omit storage; return and unassigned edits require a lo
     .click();
   await page.getByRole("option", { name: "Locker", exact: true }).click();
   await page
-    .getByRole("button", { name: "Confirm movement", exact: true })
+    .getByRole("button", {
+      name: /Confirm (movement|assignment|reassignment)/,
+      exact: true,
+    })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(page.locator(".assignment-bridge")).toContainText("Locker");
+  await expect(page.locator(".overview-ownership")).toContainText("Locker");
   const latest = (
     await (await request.get("/api/inventory")).json()
   ).assets.find((a: Asset) => a.id === asset.id);

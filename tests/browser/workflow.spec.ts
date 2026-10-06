@@ -58,8 +58,17 @@ async function upload(page: Page) {
 test("exact OCR match opens the existing asset without a registration submission", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   const state = await setup(page, "qy8c7k1qr9");
   await upload(page);
+  await expect(
+    page.getByRole("heading", { name: "This device is already registered." }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "docs/screenshots/serial-exact-match-390.png",
+    fullPage: true,
+  });
+  await page.getByRole("link", { name: /Open existing asset/ }).click();
   await expect(page).toHaveURL(/assets\/DEMO-001/);
   expect(state.creates()).toBe(0);
   await page.goto("/scan");
@@ -70,16 +79,22 @@ test("exact OCR match opens the existing asset without a registration submission
 test("missing OCR character requires comparison before proceeding and opens existing without saving", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   const state = await setup(page, "QYC7K1QR9");
   await upload(page);
   await expect(
-    page.getByRole("heading", { name: "Is this already registered?" }),
+    page.getByRole("heading", { name: "Could this be the same device?" }),
   ).toBeVisible();
-  await page.getByLabel("I checked this serial").check();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Ready to register." }),
+    page.getByRole("button", { name: "Continue as new device", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByLabel("Serial number", { exact: true }),
   ).not.toBeVisible();
+  await page.screenshot({
+    path: "docs/screenshots/serial-possible-match-390.png",
+    fullPage: true,
+  });
   await page.getByRole("link", { name: /QY8C7K1QR9/ }).click();
   await expect(page).toHaveURL(/assets\/DEMO-001/);
   expect(state.creates()).toBe(0);
@@ -90,6 +105,9 @@ test("distinct-device override is explicit and resets when starting a new scan",
   await setup(page, "QYC7K1QR9");
   await upload(page);
   await page.getByLabel("I compared these records").check();
+  await page
+    .getByRole("button", { name: "Continue as new device", exact: true })
+    .click();
   await page.getByLabel("I checked this serial").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
@@ -102,7 +120,7 @@ test("distinct-device override is explicit and resets when starting a new scan",
     "",
   );
   await expect(
-    page.getByRole("heading", { name: "Is this already registered?" }),
+    page.getByRole("heading", { name: "Could this be the same device?" }),
   ).not.toBeVisible();
 });
 test("race-time exact duplicate redirects to existing asset instead of leaving a failed registration", async ({
@@ -147,19 +165,22 @@ test("registration assigns an owner atomically and details/edit support reassign
   await page.getByRole("button", { name: "Save asset", exact: true }).click();
   await expect(page).toHaveURL(/assets\/DEMO-/);
   const id = page.url().split("/assets/")[1].split("?")[0];
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Reassign owner", exact: true })
     .click();
   await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
   await page.getByRole("option", { name: "Maya Chen", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm movement" }).click();
-  await expect(page.locator(".assignment-bridge")).toContainText("Maya Chen");
+  await page
+    .getByRole("button", { name: /Confirm (movement|assignment|reassignment)/ })
+    .click();
+  await expect(page.locator(".overview-ownership")).toContainText("Maya Chen");
   await page.goto("/scan?manual=1");
   await page.getByLabel("Serial number", { exact: true }).fill(serial);
   await page.getByLabel("I checked this serial").check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("link", { name: /Open existing asset/ }).click();
   await expect(page).toHaveURL(new RegExp(id));
   const snapshot = await (await request.get("/api/inventory")).json();
   expect(

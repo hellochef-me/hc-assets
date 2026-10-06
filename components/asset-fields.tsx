@@ -14,17 +14,63 @@ export function AssetFields({
   nameRequired = true,
   assigned = false,
   assignmentControls,
+  compact = false,
+  photoControls,
 }: {
   nameRequired?: boolean;
   assigned?: boolean;
   assignmentControls?: React.ReactNode;
+  compact?: boolean;
+  photoControls?: React.ReactNode;
   asset: AssetInput;
   setAsset: (a: AssetInput) => void;
 }) {
   const change = (key: keyof AssetInput, value: string | boolean) =>
     setAsset({ ...asset, [key]: value });
+  const nameField = (
+    <Field label="Asset name">
+      <input
+        value={asset.name}
+        onChange={(e) => change("name", e.target.value)}
+        required={nameRequired}
+        maxLength={400}
+        autoComplete="off"
+        placeholder="e.g. Dell Latitude 5440"
+      />
+    </Field>
+  );
+  const identityFields = (
+    <div className="field-grid">
+      {!compact && nameField}
+      <Field label="Category">
+        <Select
+          value={asset.category}
+          onChange={(e) => change("category", e.target.value)}
+        >
+          {categories.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </Select>
+      </Field>
+      <Field label="Brand">
+        <input
+          value={asset.brand}
+          onChange={(e) => change("brand", e.target.value)}
+          placeholder="Unknown"
+        />
+      </Field>
+      <Field label="Model">
+        <input
+          value={asset.model}
+          onChange={(e) => change("model", e.target.value)}
+          placeholder="Unknown"
+        />
+      </Field>
+    </div>
+  );
   return (
     <div className="asset-fields">
+      {compact && nameField}
       <Field
         label="Serial number"
         hint="Read it from the label. Leave blank if missing or uncertain."
@@ -51,42 +97,15 @@ export function AssetFields({
           I checked this serial against the device label
         </label>
       )}
-      <div className="field-grid">
-        <Field label="Asset name">
-          <input
-            value={asset.name}
-            onChange={(e) => change("name", e.target.value)}
-            required={nameRequired}
-            maxLength={400}
-            autoComplete="off"
-            placeholder="e.g. Dell Latitude 5440"
-          />
-        </Field>
-        <Field label="Category">
-          <Select
-            value={asset.category}
-            onChange={(e) => change("category", e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Brand">
-          <input
-            value={asset.brand}
-            onChange={(e) => change("brand", e.target.value)}
-            placeholder="Unknown"
-          />
-        </Field>
-        <Field label="Model">
-          <input
-            value={asset.model}
-            onChange={(e) => change("model", e.target.value)}
-            placeholder="Unknown"
-          />
-        </Field>
-      </div>
+      {photoControls}
+      {compact ? (
+        <details className="disclosure">
+          <summary>Brand, model & category</summary>
+          <div className="disclosure-content">{identityFields}</div>
+        </details>
+      ) : (
+        identityFields
+      )}
       <details className="disclosure">
         <summary>Specifications, condition & accessories</summary>
         <div className="disclosure-content">

@@ -6,10 +6,11 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Camera, ImagePlus } from "lucide-react";
+import { Camera } from "lucide-react";
 import { type AssetInput, thumbnailPhoto } from "@/lib/model";
 import { compressPhoto } from "@/lib/client";
-import { Button, Device, Notice } from "./ui";
+import { Button, Notice } from "./ui";
+import { AssetPortrait } from "./asset-visual";
 import { CameraCapture } from "./camera-capture";
 export function DevicePhoto({
   asset,
@@ -75,17 +76,15 @@ export function DevicePhoto({
     }
   }
   return (
-    <section className="card device-photo-card" aria-label="Device thumbnail">
-      <div className="confirm-asset">
-        <Device asset={asset} />
-        <div>
-          <h2>Take a photo of the device.</h2>
-          <p>
-            This becomes the inventory thumbnail. Capture the whole device, not
-            its serial label.
-          </p>
-        </div>
+    <section
+      className={`card device-photo-card ${thumbnailPhoto(asset) ? "has-photo" : ""}`}
+      aria-label="Device thumbnail"
+    >
+      <div className="photo-card-heading">
+        <h2>Device photo</h2>
+        <p>Show the whole device clearly. This photo appears in inventory.</p>
       </div>
+      <AssetPortrait asset={asset} />
       {camera ? (
         <CameraCapture
           purpose="device"
@@ -113,17 +112,8 @@ export function DevicePhoto({
           >
             <Camera />
             {thumbnailPhoto(asset)
-              ? "Retake device photo"
+              ? "Replace device photo"
               : "Take device photo"}
-          </Button>
-          <Button
-            type="button"
-            variant="quiet"
-            disabled={busy}
-            onClick={() => upload.current?.click()}
-          >
-            <ImagePlus />
-            Upload device photo
           </Button>
           {thumbnailPhoto(asset) && (
             <Button

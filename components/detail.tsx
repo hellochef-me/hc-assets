@@ -19,11 +19,14 @@ import {
   inputOf,
   hasValidStorageLocation,
   locationLabel,
+  thumbnailPhoto,
 } from "@/lib/model";
 import { ApiError, request } from "@/lib/client";
 import { useInventory } from "./use-inventory";
-import { Button, Badge, Device, Notice, Timeline, Dialog, date } from "./ui";
+import { Button, Badge, Notice, Timeline, Dialog, date } from "./ui";
 import { DevicePhoto } from "./device-photo";
+import { AssetPortrait, AssetSummary } from "./asset-visual";
+import { LabelRescan } from "./label-rescan";
 import { AssetFields } from "./asset-fields";
 import { MoveDialog } from "./move-dialog";
 import { AssetNotes } from "./asset-notes";
@@ -54,12 +57,17 @@ export function Detail({ id }: { id: string }) {
     [move, setMove] = useState(false),
     [saving, setSaving] = useState(false),
     [preparingPhoto, setPreparingPhoto] = useState(false),
+    [readingLabel, setReadingLabel] = useState(false),
+    [reviewingEdit, setReviewingEdit] = useState(false),
     [saveError, setSaveError] = useState(""),
     [duplicate, setDuplicate] = useState(""),
     [resaleError, setResaleError] = useState(""),
     [researching, setResearching] = useState(false),
     [confirmed, setConfirmed] = useState(false);
   const receipt = useRef({ payload: "", id: "" });
+  const submitting = useRef(false);
+  const [baseline, setBaseline] = useState<AssetInput | null>(null);
+  const editVersion = useRef(0);
   useEffect(() => {
     // Read the local confirmation marker only after hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -69,7 +77,14 @@ export function Detail({ id }: { id: string }) {
   }, []);
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!asset || !draft) return;
+    if (
+      !asset ||
+      !draft ||
+      submitting.current ||
+      preparingPhoto ||
+      readingLabel
+    )
+      return;
     if (
       !hasValidStorageLocation({
         location: draft.location,
@@ -86,7 +101,13 @@ export function Detail({ id }: { id: string }) {
       setSaveError(parsed.error.issues[0].message);
       return;
     }
-    const value = { asset: parsed.data, expectedVersion: asset.version },
+    if (!reviewingEdit) {
+      setSaveError("");
+      setReviewingEdit(true);
+      return;
+    }
+    submitting.current = true;
+    const value = { asset: parsed.data, expectedVersion: editVersion.current },
       payload = JSON.stringify(value);
     if (receipt.current.payload !== payload)
       receipt.current = { payload, id: crypto.randomUUID() };
@@ -103,8 +124,11 @@ export function Detail({ id }: { id: string }) {
       await reload();
     } catch (e) {
       setSaveError((e as Error).message);
+      if (e instanceof ApiError && [400, 409].includes(e.status || 0))
+        setReviewingEdit(false);
       if (e instanceof ApiError && e.assetId) setDuplicate(e.assetId);
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -170,33 +194,58 @@ export function Detail({ id }: { id: string }) {
             : "Saved to Google Sheets"}
         </div>
       )}
-      <div className="page-heading">
-        <div>
-          <h1>{asset.name}</h1>
-          <div className="detail-subtitle">
-            <span className="serial">{asset.serial || "Unknown serial"}</span>
-            <Badge status={asset.status} />
+      <div className="asset-overview card">
+        <AssetPortrait asset={asset} />
+        <div className="overview-body">
+          <div className="page-heading">
+            <div>
+              <h1>{asset.name}</h1>
+              <div className="detail-subtitle">
+                <span className="serial">
+                  {asset.serial || "Unknown serial"}
+                </span>
+                <Badge status={asset.status} />
+              </div>
+            </div>
+            <div className="heading-actions">
+              <Button
+                variant="secondary"
+                disabled={!canWrite}
+                onClick={() => {
+                  setDraft(inputOf(asset));
+                  setBaseline(inputOf(asset));
+                  editVersion.current = asset.version;
+                  setReviewingEdit(false);
+                  setEditing(true);
+                  setSaveError("");
+                }}
+              >
+                <Pencil />
+                Edit details
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="heading-actions">
+          <div className="overview-ownership">
+            <div>
+              <User />
+              <span>
+                Assigned to<strong>{asset.assignee || "Unassigned"}</strong>
+              </span>
+            </div>
+            <div>
+              <MapPin />
+              <span>
+                Location<strong>{locationLabel(asset)}</strong>
+              </span>
+            </div>
+          </div>
           <Button
             variant="secondary"
-            disabled={!canWrite}
-            onClick={() => {
-              setDraft(inputOf(asset));
-              setEditing(true);
-              setSaveError("");
-            }}
-          >
-            <Pencil />
-            Edit
-          </Button>
-          <Button
             disabled={!canWrite || asset.status === "Retired"}
             onClick={() => setMove(true)}
           >
             <ArrowLeftRight />
-            Move or assign
+            {asset.assignee ? "Reassign owner" : "Assign owner"}
           </Button>
         </div>
       </div>
@@ -205,7 +254,6 @@ export function Detail({ id }: { id: string }) {
           <section className="card details-card">
             <h2>Asset details</h2>
             <div className="identity-layout">
-              <Device asset={asset} large />
               <dl>
                 {[
                   ["Category", asset.category],
@@ -222,28 +270,6 @@ export function Detail({ id }: { id: string }) {
                 ))}
               </dl>
             </div>
-            <div className="assignment-bridge">
-              <div>
-                <User />
-                <span>
-                  Assigned to<strong>{asset.assignee || "Unassigned"}</strong>
-                </span>
-              </div>
-              <div>
-                <MapPin />
-                <span>
-                  Location<strong>{locationLabel(asset)}</strong>
-                </span>
-              </div>
-            </div>
-            <Button
-              variant="secondary"
-              disabled={!canWrite || asset.status === "Retired"}
-              onClick={() => setMove(true)}
-            >
-              <ArrowLeftRight />
-              {asset.assignee ? "Reassign owner" : "Assign owner"}
-            </Button>
             <div className="purchase-line">
               <Wallet />
               <span>Purchase cost</span>
@@ -261,7 +287,17 @@ export function Detail({ id }: { id: string }) {
             </p>
           </section>
           <section className="card movement-card">
-            <h2>Assignment & movement</h2>
+            <div className="movement-heading">
+              <h2>Assignment & movement</h2>{" "}
+              <Button
+                variant="quiet"
+                disabled={!canWrite || asset.status === "Retired"}
+                onClick={() => setMove(true)}
+              >
+                <ArrowLeftRight />
+                Move or assign
+              </Button>
+            </div>
             <Timeline events={events} />
           </section>
         </div>
@@ -413,50 +449,154 @@ export function Detail({ id }: { id: string }) {
         }}
       />
       <Dialog
-        title="Edit asset"
+        title={reviewingEdit ? "Review changes" : "Edit asset"}
         open={editing}
         onClose={() => {
           if (!saving) setEditing(false);
         }}
       >
         {draft && (
-          <form onSubmit={save}>
-            <section className="edit-assignment">
-              <strong>Owner: {asset.assignee || "Unassigned"}</strong>
-              <p>
-                Change ownership through an assignment so the movement history
-                is recorded. Save any detail edits first.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={saving || asset.status === "Retired"}
-                onClick={() => {
-                  setEditing(false);
-                  setMove(true);
-                }}
-              >
-                {asset.assignee ? "Reassign owner" : "Assign owner"}
-              </Button>
-            </section>
-            <DevicePhoto
-              asset={draft}
-              setAsset={(next) =>
-                setDraft((current) =>
-                  current
-                    ? typeof next === "function"
-                      ? next(current)
-                      : next
-                    : null,
+          <form
+            key={editing ? "editing" : "closed"}
+            onSubmit={save}
+            className={`asset-edit-form ${readingLabel ? "is-reading-label" : ""}`}
+          >
+            <AssetSummary asset={asset} />
+            {reviewingEdit ? (
+              <div className="edit-review">
+                <h3>Changes to be saved</h3>
+                {(
+                  [
+                    ["name", "Asset name"],
+                    ["category", "Category"],
+                    ["brand", "Brand"],
+                    ["model", "Model"],
+                    ["serial", "Serial number"],
+                    ["specs", "Specifications"],
+                    ["condition", "Condition"],
+                    ["accessories", "Accessories"],
+                    ["location", "Storage location"],
+                    ["purchaseCost", "Purchase cost"],
+                    ["purchaseCurrency", "Currency"],
+                    ["purchaseDate", "Purchase date"],
+                    ["notes", "Notes"],
+                    ["serialChecked", "Serial checked"],
+                    ["specsChecked", "Specifications verified"],
+                    ["conditionChecked", "Condition inspected"],
+                  ] as const
                 )
-              }
-              onBusy={setPreparingPhoto}
-            />
-            <AssetFields
-              asset={draft}
-              setAsset={setDraft}
-              assigned={Boolean(asset.assignee.trim())}
-            />
+                  .filter(([key]) => baseline?.[key] !== draft[key])
+                  .map(([key, label]) => (
+                    <div className="change-row" key={key}>
+                      <h4>{label}</h4>
+                      <div>
+                        <span>
+                          <small>Current value</small>
+                          {typeof baseline?.[key] === "boolean"
+                            ? baseline[key]
+                              ? "Yes"
+                              : "No"
+                            : String(baseline?.[key] || "Unknown")}
+                        </span>
+                        <ArrowLeftRight />
+                        <strong>
+                          <small>New value</small>
+                          {typeof draft[key] === "boolean"
+                            ? draft[key]
+                              ? "Yes"
+                              : "No"
+                            : String(draft[key] || "Unknown")}
+                        </strong>
+                      </div>
+                    </div>
+                  ))}
+                {thumbnailPhoto(asset) !== thumbnailPhoto(draft) && (
+                  <section>
+                    <h3>
+                      {thumbnailPhoto(draft)
+                        ? "New device photo"
+                        : "Device photo removed"}
+                    </h3>
+                    <AssetPortrait asset={draft} />
+                  </section>
+                )}
+                {JSON.stringify(baseline) === JSON.stringify(draft) && (
+                  <p>No details have changed.</p>
+                )}
+                <div className="record-kept">
+                  <Check />
+                  <div>
+                    <strong>Updating {asset.id}</strong>
+                    <p>Your existing record and history stay together.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <LabelRescan
+                  enabled={Boolean(source?.ocrEnabled ?? source?.aiEnabled)}
+                  onBusy={setReadingLabel}
+                  onSerial={(serial) =>
+                    setDraft((current) =>
+                      current
+                        ? { ...current, serial, serialChecked: false }
+                        : current,
+                    )
+                  }
+                />
+                <h3 className="form-section-title">Device details</h3>
+                <AssetFields
+                  compact
+                  photoControls={
+                    <DevicePhoto
+                      asset={draft}
+                      setAsset={(next) =>
+                        setDraft((current) =>
+                          current
+                            ? typeof next === "function"
+                              ? next(current)
+                              : next
+                            : null,
+                        )
+                      }
+                      onBusy={setPreparingPhoto}
+                    />
+                  }
+                  asset={draft}
+                  setAsset={setDraft}
+                  assigned={Boolean(asset.assignee.trim())}
+                />
+                <section className="edit-assignment">
+                  <strong>Owner: {asset.assignee || "Unassigned"}</strong>
+                  <p>
+                    Reassignment is a separate action recorded in movement
+                    history.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={
+                      saving ||
+                      readingLabel ||
+                      preparingPhoto ||
+                      asset.status === "Retired"
+                    }
+                    onClick={() => {
+                      if (JSON.stringify(baseline) !== JSON.stringify(draft)) {
+                        setSaveError(
+                          "Save or cancel your detail edits before reassigning the owner.",
+                        );
+                        return;
+                      }
+                      setEditing(false);
+                      setMove(true);
+                    }}
+                  >
+                    {asset.assignee ? "Reassign owner" : "Assign owner"}
+                  </Button>
+                </section>
+              </>
+            )}
             {saveError && (
               <Notice warning>
                 {saveError}
@@ -484,12 +624,26 @@ export function Detail({ id }: { id: string }) {
                 type="button"
                 variant="secondary"
                 disabled={saving}
-                onClick={() => setEditing(false)}
+                onClick={() =>
+                  reviewingEdit ? setReviewingEdit(false) : setEditing(false)
+                }
               >
-                Cancel
+                {reviewingEdit ? "Back to edit" : "Cancel"}
               </Button>
-              <Button disabled={saving || preparingPhoto}>
-                {saving ? "Saving changes…" : "Save changes"}
+              <Button
+                disabled={
+                  saving ||
+                  preparingPhoto ||
+                  readingLabel ||
+                  (reviewingEdit &&
+                    JSON.stringify(baseline) === JSON.stringify(draft))
+                }
+              >
+                {saving
+                  ? "Saving changes…"
+                  : reviewingEdit
+                    ? "Save changes"
+                    : "Review changes"}
               </Button>
             </div>
           </form>

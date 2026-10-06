@@ -34,6 +34,9 @@ import { Button, Notice, Device, Field } from "./ui";
 import { Select } from "./select";
 import { AssetFields } from "./asset-fields";
 import { DevicePhoto } from "./device-photo";
+import { AssetPortrait } from "./asset-visual";
+import { SerialMatch } from "./serial-match";
+import { ScanStatus } from "./scan-status";
 import { CameraCapture } from "./camera-capture";
 import { useSource } from "./source-context";
 import type { PhotoExtraction } from "@/lib/server/integrations";
@@ -43,7 +46,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   const ocrEnabled = source?.ocrEnabled ?? source?.aiEnabled ?? false;
   const [cameraOpen, setCameraOpen] = useState(false),
     [recognizing, setRecognizing] = useState(false),
-    [recognitionNotice, setRecognitionNotice] = useState("");
+    [recognitionNotice, setRecognitionNotice] = useState(""),
+    [recognitionPhase, setRecognitionPhase] = useState<"label" | "lookup">(
+      "label",
+    ),
+    [readIssue, setReadIssue] = useState("");
   const recognition = useRef<{
     generation: number;
     controller?: AbortController;
@@ -64,7 +71,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     [labelPhotos, setLabelPhotos] = useState<string[]>([]),
     [people, setPeople] = useState<Person[]>([]),
     [possibleMatches, setPossibleMatches] = useState<Asset[]>([]),
-    [reviewedMatchIds, setReviewedMatchIds] = useState<string[]>([]);
+    [reviewedMatchIds, setReviewedMatchIds] = useState<string[]>([]),
+    [matchDismissed, setMatchDismissed] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null),
     cameraInput = useRef<HTMLInputElement>(null),
     operation = useRef(0),
@@ -107,9 +115,11 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setLabelPhotos([]);
     setMatches([]);
     setPossibleMatches([]);
+    setMatchDismissed(false);
     setReviewedMatchIds([]);
     setUnknownConfirmed(false);
     setRecognitionNotice("");
+    setReadIssue("");
     setError("");
     setStep(0);
     receipt.current = { payload: "", id: "" };
@@ -117,6 +127,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   function changeAsset(next: AssetInput) {
     if (next.serial !== asset.serial) {
       setPossibleMatches([]);
+      setMatchDismissed(false);
       setReviewedMatchIds([]);
       setMatches([]);
     }
@@ -147,6 +158,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     const token = recognition.current.generation;
     recognition.current.controller = controller;
     setRecognizing(true);
+    setRecognitionPhase("label");
+    setReadIssue("");
     setRecognitionNotice("");
     try {
       const extracted = await request<PhotoExtraction>("/api/scan", {
@@ -182,7 +195,14 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         );
         return;
       }
+      if (!serial) {
+        setReadIssue(
+          "The serial number was missing or unreadable. You can keep the other extracted details and enter it manually.",
+        );
+        return;
+      }
       if (serial) {
+        setRecognitionPhase("lookup");
         const snapshot = await fetchSnapshot();
         if (
           token !== recognition.current.generation ||
@@ -192,7 +212,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         setPeople(snapshot.people);
         const found = findBySerial(snapshot.assets, serial);
         if (found.length === 1) {
-          openExisting(found[0].id);
+          setMatches(found);
+          setStep(1);
           return;
         }
         if (found.length > 1) {
@@ -204,10 +225,10 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           setPossibleMatches(possibleSerialMatches(snapshot.assets, serial));
       }
     } catch (e) {
-      if (token === recognition.current.generation)
-        setRecognitionNotice(
-          `${(e as Error).message} You can continue with manual details.`,
-        );
+      if (token === recognition.current.generation) {
+        setReadIssue((e as Error).message);
+        setRecognitionNotice("You can continue with manual details.");
+      }
     } finally {
       if (token === recognition.current.generation) setRecognizing(false);
     }
@@ -340,13 +361,16 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       );
       return;
     }
+    const lookupToken = ++operation.current;
     setChecking(true);
     try {
       const snapshot = await fetchSnapshot();
+      if (lookupToken !== operation.current) return;
       setPeople(snapshot.people);
       const found = findBySerial(snapshot.assets, asset.serial);
       if (found.length === 1) {
-        openExisting(found[0].id);
+        setMatches(found);
+        setStep(1);
         return;
       }
       if (found.length > 1) {
@@ -365,6 +389,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       const possible = possibleSerialMatches(snapshot.assets, asset.serial);
       setPossibleMatches(possible);
       if (possible.some((a) => !reviewedMatchIds.includes(a.id))) {
+        setMatchDismissed(false);
         setError(
           "This may already be registered. Compare the serials below before creating another record.",
         );
@@ -384,9 +409,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       setStep(2);
       window.scrollTo({ top: 0, behavior: "instant" });
     } catch (e) {
-      setError((e as Error).message);
+      if (lookupToken === operation.current) setError((e as Error).message);
     } finally {
-      setChecking(false);
+      if (lookupToken === operation.current) setChecking(false);
     }
   }
   async function save() {
@@ -464,6 +489,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setError("");
   }
   if (!ready) return <div className="loading">Restoring registration…</div>;
+  const progressStep = recognizing || readIssue ? 0 : step;
   return (
     <div className="page scan-page">
       <div className="scan-top">
@@ -485,23 +511,28 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         {["Label", "Details", "Device photo", "Confirm"].map((s, i) => (
           <li
             key={s}
-            className={step >= i ? "complete" : ""}
-            aria-current={step === i ? "step" : undefined}
+            className={progressStep >= i ? "complete" : ""}
+            aria-current={progressStep === i ? "step" : undefined}
           >
-            <span>{step > i ? <Check /> : i + 1}</span>
+            <span>{progressStep > i ? <Check /> : i + 1}</span>
             {s}
           </li>
         ))}
       </ol>
-      {step > 0 && (
-        <Button
-          variant="quiet"
-          disabled={saving || checking}
-          onClick={startFresh}
-        >
-          Start a new scan
-        </Button>
-      )}
+      {step > 0 &&
+        !recognizing &&
+        !checking &&
+        !readIssue &&
+        !matches.length &&
+        !(possibleMatches.length > 0 && step === 1 && !matchDismissed) && (
+          <Button
+            variant="quiet"
+            disabled={saving || checking}
+            onClick={startFresh}
+          >
+            Start a new scan
+          </Button>
+        )}
       {draftWarning && <Notice warning>{draftWarning}</Notice>}
       {error && (
         <Notice warning>
@@ -517,66 +548,37 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           )}
         </Notice>
       )}
-      {matches.length > 1 && (
-        <section className="card">
-          <h2>Choose an existing record</h2>
-          {matches.map((a) => (
-            <Link
-              key={a.id}
-              className="duplicate-record"
-              href={`/assets/${encodeURIComponent(a.id)}`}
-              onClick={clearDraft}
-            >
-              {a.name} · {a.id}
-              <br />
-              {a.assignee || "Unassigned"} · {a.location}
-            </Link>
-          ))}
-        </section>
-      )}
-      {possibleMatches.length > 0 && step === 1 && (
-        <section
-          className="card duplicate-review"
-          aria-label="Possible existing assets"
-        >
-          <h2>Is this already registered?</h2>
-          <p>
-            Scanned serial: <strong>{asset.serial}</strong>. A missing or
-            misread character can create a duplicate. Open the matching device
-            to update its owner or details.
-          </p>
-          {possibleMatches.map((a) => (
-            <Link
-              key={a.id}
-              className="duplicate-record"
-              href={`/assets/${encodeURIComponent(a.id)}`}
-              onClick={clearDraft}
-            >
-              <strong>
-                {a.name} · {a.serial}
-              </strong>
-              <br />
-              {a.assignee || "Unassigned"} · {a.id} · Open existing asset →
-            </Link>
-          ))}
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={possibleMatches.every((a) =>
-                reviewedMatchIds.includes(a.id),
-              )}
-              onChange={(e) =>
-                setReviewedMatchIds(
-                  e.target.checked ? possibleMatches.map((a) => a.id) : [],
-                )
-              }
-            />
-            I compared these records and checked the physical label. This is a
-            different device.
-          </label>
-        </section>
-      )}
-      {step === 0 ? (
+      {recognizing || checking || readIssue ? (
+        <ScanStatus
+          photo={labelPhotos[0]}
+          serial={asset.serial}
+          lookup={checking || recognitionPhase === "lookup"}
+          issue={readIssue}
+          onManual={() => {
+            cancelRecognition();
+            operation.current++;
+            setChecking(false);
+            setReadIssue("");
+            setStep(1);
+          }}
+          onRetry={startFresh}
+        />
+      ) : matches.length > 0 ||
+        (possibleMatches.length > 0 && step === 1 && !matchDismissed) ? (
+        <SerialMatch
+          exact={matches.length > 0}
+          candidates={matches.length ? matches : possibleMatches}
+          scanned={asset.serial}
+          reviewed={reviewedMatchIds}
+          onReview={setReviewedMatchIds}
+          onOpen={clearDraft}
+          onRetry={startFresh}
+          onContinue={() => {
+            setMatchDismissed(true);
+            setError("");
+          }}
+        />
+      ) : step === 0 ? (
         <section className="capture-stage">
           <div className="scan-heading">
             <p className="eyebrow">LET’S GET IT REGISTERED</p>
@@ -823,6 +825,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           />
           <div className="sticky-actions">
             <Button
+              variant={asset.coverPhotoIndex != null ? "primary" : "secondary"}
               disabled={preparing}
               onClick={() => {
                 setLabelPhotos([]);
@@ -850,6 +853,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <p>Confirm this new asset before saving.</p>
           </div>
           <div className="card confirmation">
+            <AssetPortrait asset={asset} />
             <div className="confirm-asset">
               <Device asset={asset} />
               <div>
@@ -923,7 +927,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               Unverified fields stay Unknown. Battery health is not assessed.
             </Notice>
           </div>
-          <Notice warning>Nothing is saved until the server confirms.</Notice>
+          <p className="fine-print">
+            Only new devices create a record. Save once to confirm.
+          </p>
           <div className="sticky-actions">
             <Button onClick={save} disabled={saving || !canWrite}>
               {saving ? "Saving asset…" : "Save asset"}

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Camera, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Camera, ImagePlus, RotateCcw } from "lucide-react";
 import { Button, Notice } from "./ui";
 export function CameraCapture({
   purpose = "label",
@@ -15,7 +15,8 @@ export function CameraCapture({
   onUpload: () => void;
   onNativeCapture: () => void;
 }) {
-  const video = useRef<HTMLVideoElement>(null),
+  const modal = useRef<HTMLDialogElement>(null),
+    video = useRef<HTMLVideoElement>(null),
     stream = useRef<MediaStream | null>(null),
     generation = useRef(0);
   const [state, setState] = useState<"starting" | "ready" | "error" | "review">(
@@ -92,6 +93,8 @@ export function CameraCapture({
   }
   useEffect(() => {
     let active = true;
+    const dialog = modal.current;
+    dialog?.showModal();
     queueMicrotask(() => {
       if (active) void start();
     });
@@ -104,19 +107,12 @@ export function CameraCapture({
         );
       }
     }
-    function escape(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        stop();
-        onCancel();
-      }
-    }
     document.addEventListener("visibilitychange", hidden);
-    document.addEventListener("keydown", escape);
     return () => {
       active = false;
       stop();
       document.removeEventListener("visibilitychange", hidden);
-      document.removeEventListener("keydown", escape);
+      dialog?.close();
     };
     // Camera session starts once; parent callbacks are intentionally excluded.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -148,109 +144,154 @@ export function CameraCapture({
     setPhoto(data);
     setState("review");
   }
+  const reviewing = state === "review";
+  const title = reviewing
+    ? purpose === "device"
+      ? "Use this device photo?"
+      : "Is the label clear?"
+    : purpose === "device"
+      ? "Take a device photo"
+      : "Read the device label";
   return (
-    <section className="camera-live" aria-label="Camera capture">
-      <div className="camera-live-heading">
-        <h2>{state === "review" ? "Check your photo" : "Device camera"}</h2>
-        <Button
-          type="button"
-          variant="quiet"
-          aria-label="Close camera"
-          onClick={() => {
-            stop();
-            onCancel();
-          }}
-        >
-          <X />
-        </Button>
-      </div>
-      <div className="camera-viewfinder">
-        <video
-          hidden={!!photo}
-          ref={video}
-          autoPlay
-          playsInline
-          muted
-          aria-label="Live camera preview"
-        />
-        {photo && (
-          <img
-            src={photo}
-            alt={
-              purpose === "device"
-                ? "Captured device photo awaiting confirmation"
-                : "Captured device label awaiting confirmation"
-            }
+    <dialog
+      ref={modal}
+      className="camera-modal"
+      aria-labelledby="camera-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        stop();
+        onCancel();
+      }}
+    >
+      <section
+        className="camera-live camera-fullscreen"
+        aria-label="Camera capture"
+      >
+        <header className="camera-live-heading">
+          <Button
+            type="button"
+            variant="quiet"
+            aria-label="Close camera"
+            onClick={() => {
+              stop();
+              onCancel();
+            }}
+          >
+            <ArrowLeft />
+          </Button>
+          <div>
+            <h2 id="camera-title">{title}</h2>
+            <p>
+              {purpose === "device"
+                ? reviewing
+                  ? "This appears in inventory"
+                  : "Fit the whole device in the frame"
+                : reviewing
+                  ? "We'll read this photo, then discard it"
+                  : "Keep the serial number sharp and readable"}
+            </p>
+          </div>
+        </header>
+        <div className="camera-viewfinder">
+          <video
+            hidden={!!photo}
+            ref={video}
+            autoPlay
+            playsInline
+            muted
+            aria-label="Live camera preview"
           />
-        )}
-        {state === "starting" && (
-          <p role="status">
-            Starting camera… Please respond to browser or OS permission prompts.
-          </p>
-        )}
-      </div>
-      {error && <Notice warning>{error}</Notice>}
-      <div className="camera-live-actions">
-        {state === "ready" ? (
-          <Button type="button" onClick={capture}>
-            <Camera />
-            Capture photo
-          </Button>
-        ) : state === "review" ? (
-          <>
-            <Button type="button" onClick={() => onCaptured(photo)}>
-              Use photo
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => void start()}
-            >
-              <RotateCcw />
-              Retake
-            </Button>
-          </>
-        ) : state === "error" ? (
-          <Button type="button" onClick={() => void start()}>
-            <RotateCcw />
-            Retry camera
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            stop();
-            onNativeCapture();
-          }}
+          {photo && (
+            <img
+              src={photo}
+              alt={
+                purpose === "device"
+                  ? "Captured device photo awaiting confirmation"
+                  : "Captured device label awaiting confirmation"
+              }
+            />
+          )}
+          {state === "starting" && (
+            <p role="status">
+              Starting camera…
+              <br />
+              Allow camera access when prompted.
+            </p>
+          )}
+          {state === "ready" && (
+            <span className="camera-guides" aria-hidden="true" />
+          )}
+          {error && (
+            <div className="camera-error">
+              <Notice warning>{error}</Notice>
+            </div>
+          )}
+        </div>
+        <div
+          className={`camera-live-actions ${reviewing ? "is-review" : state === "error" ? "is-error" : "is-capture"}`}
         >
-          Use device camera
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            stop();
-            onUpload();
-          }}
-        >
-          Upload photo instead
-        </Button>
-        <Button
-          type="button"
-          variant="quiet"
-          onClick={() => {
-            stop();
-            onCancel();
-          }}
-        >
-          Cancel camera
-        </Button>
-      </div>
-      <small>
-        Camera frames stay local until you use a photo. Recognition runs only
-        when the server provider is explicitly configured.
-      </small>
-    </section>
+          {reviewing ? (
+            <>
+              <Button type="button" onClick={() => onCaptured(photo)}>
+                Use photo
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void start()}
+              >
+                <RotateCcw />
+                Retake
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="quiet"
+                className="camera-upload"
+                aria-label="Upload photo instead"
+                onClick={() => {
+                  stop();
+                  onUpload();
+                }}
+              >
+                <ImagePlus />
+                <span>Upload</span>
+              </Button>
+              {state === "ready" && (
+                <Button
+                  type="button"
+                  className="camera-shutter"
+                  aria-label="Capture photo"
+                  onClick={capture}
+                >
+                  <Camera aria-hidden="true" />
+                </Button>
+              )}
+              {state === "error" && (
+                <>
+                  <Button type="button" onClick={() => void start()}>
+                    <RotateCcw />
+                    Retry camera
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      stop();
+                      onNativeCapture();
+                    }}
+                  >
+                    Use device camera
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </dialog>
   );
 }

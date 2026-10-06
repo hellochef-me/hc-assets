@@ -1,5 +1,7 @@
 "use client";
 import { Select } from "./select";
+import { ArrowDown, User, Check } from "lucide-react";
+import { AssetSummary } from "./asset-visual";
 import { useRef, useState } from "react";
 import {
   Asset,
@@ -41,8 +43,10 @@ export function MoveDialog({
   const locationOptional =
     ["Assign", "Transfer"].includes(action) && Boolean(assignee.trim());
   const receipt = useRef({ payload: "", id: "" });
+  const submitting = useRef(false);
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     const input = {
       action,
       assignee: ["Assign", "Transfer"].includes(action) ? assignee : "",
@@ -61,6 +65,7 @@ export function MoveDialog({
       setError(parsed.error.issues[0].message);
       return;
     }
+    submitting.current = true;
     setSaving(true);
     setError("");
     try {
@@ -73,21 +78,34 @@ export function MoveDialog({
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
   return (
     <Dialog
-      title="Move or assign"
+      title={
+        action === "Transfer"
+          ? "Reassign owner"
+          : action === "Assign"
+            ? "Assign owner"
+            : "Move asset"
+      }
       open={open}
       onClose={() => {
         if (!saving) onClose();
       }}
     >
-      <form onSubmit={save}>
-        <p className="muted-text">
-          {asset.name} · {asset.id}
-        </p>
+      <form onSubmit={save} className="movement-form">
+        <AssetSummary asset={asset} />
+        <div className="current-owner">
+          <small>Current owner</small>
+          <div>
+            <User />
+            <strong>{asset.assignee || "Unassigned"}</strong>
+          </div>
+        </div>
+        <ArrowDown className="owner-direction" />
         <Field label="Movement">
           <Select
             value={action}
@@ -148,19 +166,26 @@ export function MoveDialog({
             maxLength={2000}
           />
         </Field>
-        <Notice>
-          {action === "Retire"
-            ? "Retirement is final in this preview."
-            : `${asset.assignee || "Unassigned"} · ${asset.location} → ${["Assign", "Transfer"].includes(action) ? assignee || "Choose person" : "Unassigned"} · ${location}`}
-          <br />
-          Recorded as{" "}
-          {source?.kind === "demo"
-            ? "Demo operator"
-            : source?.accessMode === "public"
-              ? "Public visitor (sign-in deferred)"
-              : "Local operator (authentication deferred)"}{" "}
-          with server time.
-        </Notice>
+        <div className="record-kept">
+          <Check />
+          <p>Added to movement history when confirmed.</p>
+        </div>
+        <details className="movement-audit">
+          <summary>Movement summary</summary>
+          <Notice>
+            {action === "Retire"
+              ? "Retirement is final in this preview."
+              : `${asset.assignee || "Unassigned"} · ${asset.location} → ${["Assign", "Transfer"].includes(action) ? assignee || "Choose person" : "Unassigned"} · ${location}`}
+            <br />
+            Recorded as{" "}
+            {source?.kind === "demo"
+              ? "Demo operator"
+              : source?.accessMode === "public"
+                ? "Public visitor (sign-in deferred)"
+                : "Local operator (authentication deferred)"}{" "}
+            with server time.
+          </Notice>
+        </details>
         {error && (
           <Notice warning>
             {error}
@@ -181,7 +206,13 @@ export function MoveDialog({
             Cancel
           </Button>
           <Button disabled={saving}>
-            {saving ? "Saving…" : "Confirm movement"}
+            {saving
+              ? "Saving…"
+              : action === "Transfer"
+                ? "Confirm reassignment"
+                : action === "Assign"
+                  ? "Confirm assignment"
+                  : "Confirm movement"}
           </Button>
         </div>
       </form>

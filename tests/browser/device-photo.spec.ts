@@ -142,14 +142,53 @@ test("adding a device photo while editing does not submit until Save changes, an
     Object.assign(data.assets[0], body.asset, { version: 2 });
     await r.fulfill({ json: { asset: data.assets[0] } });
   });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/assets/" + data.assets[0].id);
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Take device photo", exact: true })
+    .click();
+  const camera = page.locator("dialog.camera-modal");
+  await expect(camera).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Capture photo", exact: true }),
+  ).toBeVisible();
+  const bounds = await camera.boundingBox();
+  expect(bounds).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+  await expect(camera.getByRole("button")).toHaveCount(3);
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.screenshot({
+    path: "docs/screenshots/device-camera-fullscreen-390.png",
+  });
+  // Escape closes the camera, preserving the underlying asset editor.
+  await page.keyboard.press("Escape");
+  await expect(camera).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toBeVisible();
   await page
     .getByRole("button", { name: "Take device photo", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Capture photo", exact: true })
     .click();
+  await expect(camera.getByRole("button")).toHaveCount(3);
+  await expect(
+    camera.getByRole("button", { name: "Upload photo instead" }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: "docs/screenshots/device-camera-review-390.png",
+  });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(camera).toHaveJSProperty("scrollHeight", 390);
+  await expect(
+    camera.getByRole("button", { name: "Use photo", exact: true }),
+  ).toBeInViewport();
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Use photo", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(writes).toBe(0);
@@ -158,6 +197,9 @@ test("adding a device photo while editing does not submit until Save changes, an
       .getByRole("region", { name: "Device thumbnail" })
       .locator(".device img"),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   expect(writes).toBe(1);

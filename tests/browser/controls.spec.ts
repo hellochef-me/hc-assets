@@ -109,7 +109,7 @@ test("camera permission denial/no device/busy explains fallback; cancel never fa
       page.getByRole("button", { name: "Upload photo instead" }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Cancel camera", exact: true })
+      .getByRole("button", { name: "Close camera", exact: true })
       .click();
     await expect(
       page.getByRole("heading", { name: "Start with the label." }),
@@ -183,9 +183,16 @@ test("camera releases device on Escape, route unmount and page hiding", async ({
     if (cleanup === "escape") await page.keyboard.press("Escape");
     else if (cleanup === "navigate")
       await page
-        .getByRole("link", { name: "Inventory", exact: true })
+        .getByRole("link", {
+          name: "Inventory",
+          exact: true,
+          includeHidden: true,
+        })
         .last()
-        .click();
+        .evaluate((link: HTMLAnchorElement) => {
+          // Simulate an external router navigation while the modal is open.
+          link.click();
+        });
     else
       await page.evaluate(() => {
         Object.defineProperty(document, "hidden", {
@@ -289,7 +296,7 @@ test("read-only source removes registrations, disables edit/move and uses actual
   ).toHaveCount(0);
   await page.goto("/assets/DEMO-001");
   await expect(
-    page.getByRole("button", { name: "Edit", exact: true }),
+    page.getByRole("button", { name: "Edit details", exact: true }),
   ).toBeDisabled();
   await expect(
     page.getByRole("button", { name: "Move or assign", exact: true }),
@@ -366,7 +373,7 @@ test("live source enables registration/edit/movement and labels the Google write
   ).toHaveCount(0);
   await page.goto("/assets/DEMO-002");
   await expect(
-    page.getByRole("button", { name: "Edit", exact: true }),
+    page.getByRole("button", { name: "Edit details", exact: true }),
   ).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Move or assign", exact: true }),
