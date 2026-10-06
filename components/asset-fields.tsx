@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./select";
 import { AssetInput, categories, conditions } from "@/lib/model";
 import { Field, Notice } from "./ui";
 import { locations } from "@/lib/fixtures";
@@ -53,14 +54,14 @@ export function AssetFields({
           />
         </Field>
         <Field label="Category">
-          <select
+          <Select
             value={asset.category}
             onChange={(e) => change("category", e.target.value)}
           >
             {categories.map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Brand">
           <input
@@ -108,7 +109,7 @@ export function AssetFields({
             </label>
           )}
           <Field label="Condition">
-            <select
+            <Select
               value={asset.condition}
               onChange={(e) =>
                 setAsset({
@@ -121,7 +122,7 @@ export function AssetFields({
               {conditions.map((c) => (
                 <option key={c}>{c}</option>
               ))}
-            </select>
+            </Select>
           </Field>
           {asset.condition !== "Unknown" && (
             <label className="check">
@@ -169,7 +170,7 @@ export function AssetFields({
               />
             </Field>
             <Field label="Currency">
-              <select
+              <Select
                 value={asset.purchaseCurrency}
                 onChange={(e) => change("purchaseCurrency", e.target.value)}
               >
@@ -183,7 +184,7 @@ export function AssetFields({
                 {["AED", "USD", "EUR", "GBP"].map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </Select>
             </Field>
           </div>
           <Field label="Purchase date">

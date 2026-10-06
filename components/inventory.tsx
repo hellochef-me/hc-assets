@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./select";
 import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -16,7 +17,9 @@ import { Asset, statuses, categories } from "@/lib/model";
 import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Empty, date } from "./ui";
 import { MoveDialog } from "./move-dialog";
+import { useSource } from "./source-context";
 export function Inventory() {
+  const { source, canWrite } = useSource();
   const { snapshot, error, loading, reload } = useInventory();
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
@@ -74,7 +77,7 @@ export function Inventory() {
           <h1>Inventory</h1>
           <p className="subtitle">
             {snapshot
-              ? `${snapshot.assets.length} demo assets across your workplace`
+              ? `${snapshot.assets.length} ${source?.kind === "demo" ? "demo " : ""}assets across your workplace`
               : "Know what you have. Find it fast."}
           </p>
         </div>
@@ -83,12 +86,21 @@ export function Inventory() {
             <ScanLine />
             Scan asset
           </Link>
-          <Link href="/scan?manual=1" className="button secondary">
-            <Plus />
-            Add asset
-          </Link>
+          {canWrite && (
+            <Link href="/scan?manual=1" className="button secondary">
+              <Plus />
+              Add asset
+            </Link>
+          )}
         </div>
       </div>
+      {source?.readOnly && (
+        <Notice>
+          Real inventory · Read only. Scan or search to find an existing asset.
+          Registration, edits and movements are disabled; the Sheet is
+          unchanged.
+        </Notice>
+      )}
       <div className="status-tabs" aria-label="Filter by status">
         {["", "Available", "Assigned", "Needs review"].map((s) => (
           <button
@@ -130,21 +142,25 @@ export function Inventory() {
           <div className={`filters ${showFilters ? "expanded" : ""}`}>
             <label>
               <span className="sr-only">Location filter</span>
-              <select
+              <Select
+                aria-label="Location filter"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               >
                 <option value="">All locations</option>
                 {Array.from(
-                  new Set(snapshot?.assets.map((a) => a.location)),
+                  new Set(
+                    snapshot?.assets.map((a) => a.location).filter(Boolean),
+                  ),
                 ).map((l) => (
                   <option key={l}>{l}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               <span className="sr-only">Assignee filter</span>
-              <select
+              <Select
+                aria-label="Assignee filter"
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
               >
@@ -153,11 +169,12 @@ export function Inventory() {
                 {snapshot?.people.map((p) => (
                   <option key={p.name}>{p.name}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               <span className="sr-only">Category filter</span>
-              <select
+              <Select
+                aria-label="Category filter"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -165,11 +182,12 @@ export function Inventory() {
                 {categories.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               <span className="sr-only">Status filter</span>
-              <select
+              <Select
+                aria-label="Status filter"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -177,7 +195,7 @@ export function Inventory() {
                 {statuses.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button variant="quiet" onClick={reset}>
               Reset
@@ -308,7 +326,8 @@ export function Inventory() {
                 ))}
               </div>
               <div className="results-count" aria-live="polite">
-                Showing {assets.length} of {snapshot?.assets.length} demo assets
+                Showing {assets.length} of {snapshot?.assets.length}{" "}
+                {source?.kind === "demo" ? "demo " : ""}assets
               </div>
             </>
           )}
@@ -355,7 +374,7 @@ export function Inventory() {
             </Link>
             <Button
               variant="secondary"
-              disabled={selected.status === "Retired"}
+              disabled={!canWrite || selected.status === "Retired"}
               onClick={() => setMove(true)}
             >
               Move or assign

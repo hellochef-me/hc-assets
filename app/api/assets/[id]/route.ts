@@ -1,4 +1,4 @@
-import { store } from "@/lib/server/store";
+import { backendCommit } from "@/lib/server/backend";
 import { guard, json, body, failure } from "@/lib/server/http";
 export const runtime = "nodejs";
 export async function PATCH(
@@ -10,7 +10,7 @@ export async function PATCH(
     const { id } = await ctx.params;
     const input = await body(r);
     return json({
-      asset: await store.commit(input?.action ? "move" : "edit", input, id),
+      asset: await backendCommit(input?.action ? "move" : "edit", input, id),
     });
   } catch (e) {
     return failure(e);

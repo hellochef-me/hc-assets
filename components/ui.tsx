@@ -176,6 +176,7 @@ export function Timeline({ events }: { events: Movement[] }) {
   );
 }
 export function date(value: string) {
+  if (value && !Number.isFinite(new Date(value).getTime())) return value;
   return value
     ? new Date(value).toLocaleDateString("en-GB", {
         day: "2-digit",

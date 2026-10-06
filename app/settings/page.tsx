@@ -1,40 +1,86 @@
-import { Notice } from "@/components/ui";
+"use client";
+import { Notice, Button } from "@/components/ui";
+import { useInventory } from "@/components/use-inventory";
+import { useSource } from "@/components/source-context";
 export default function Page() {
+  const { source } = useSource();
+  const { snapshot, reload, error } = useInventory();
   return (
     <div className="page settings-page">
-      <h1>Preview settings</h1>
+      <h1>Connection settings</h1>
       <section className="card">
-        <h2>Local demo mode</h2>
+        <h2>{source?.label || "Checking source…"}</h2>
         <Notice>
-          This preview uses fictional assets and people. Saves persist only to
-          this computer.
+          {source?.kind === "demo"
+            ? "Fictional fixtures. Saves persist only on this computer."
+            : source?.kind === "sheet-snapshot"
+              ? "Real values read through the existing authorized Sheets connection. This is a timestamped snapshot, not continuous live synchronization. Refreshing this page reloads the snapshot; an authorized Sheet reread is needed to update it."
+              : source?.readOnly
+                ? "Authenticated server reads; writes disabled."
+                : "Isolated staging backend. Controlled writes require complete server configuration."}
         </Notice>
+        {error && <Notice warning>{error}</Notice>}
         <dl>
           <div>
-            <dt>Inventory</dt>
-            <dd>Local file · confirmed saves</dd>
+            <dt>Records loaded</dt>
+            <dd>
+              {snapshot
+                ? `${snapshot.assets.length} assets · ${snapshot.people.length} employee rows · ${snapshot.history.length} events`
+                : "Not confirmed"}
+            </dd>
           </div>
           <div>
-            <dt>Google Sheets</dt>
-            <dd>Not connected</dd>
+            <dt>Source read time</dt>
+            <dd>
+              {source?.checkedAt
+                ? new Date(source.checkedAt).toLocaleString("en-GB", {
+                    timeZone: "UTC",
+                  }) + " UTC"
+                : source?.kind === "demo"
+                  ? "Local fixtures"
+                  : "Read on request"}
+            </dd>
+          </div>
+          <div>
+            <dt>Writes</dt>
+            <dd>
+              {source?.readOnly
+                ? "Disabled · original Sheet unchanged"
+                : source?.kind === "demo"
+                  ? "Local demo only"
+                  : "Staging controlled gateway"}
+            </dd>
           </div>
           <div>
             <dt>Photo recognition</dt>
-            <dd>Not connected</dd>
+            <dd>
+              {source?.aiEnabled
+                ? "Server provider enabled; human review required"
+                : "Not configured · camera/upload and manual entry work"}
+            </dd>
           </div>
           <div>
-            <dt>Market research</dt>
-            <dd>Not connected</dd>
+            <dt>Resale research</dt>
+            <dd>
+              {source?.aiEnabled
+                ? "Current cited AED sources; may return no comparable"
+                : "Not configured · no estimate fabricated"}
+            </dd>
           </div>
           <div>
             <dt>Authentication</dt>
-            <dd>Deferred · private local preview only</dd>
+            <dd>Deferred · this Mac’s loopback preview only</dd>
           </div>
         </dl>
+        <Button variant="secondary" onClick={reload}>
+          {source?.kind === "sheet-snapshot"
+            ? "Reload imported snapshot"
+            : "Reload inventory"}
+        </Button>
         <p>
-          Existing inventory IDs and Sheet data have not been changed. Live
-          integration, authentication and secure reuse of the approved API key
-          will be configured separately.
+          Live providers require secure server configuration. Never paste keys
+          into chat or browser fields. Production records, headers and historic
+          events have not been changed.
         </p>
       </section>
     </div>

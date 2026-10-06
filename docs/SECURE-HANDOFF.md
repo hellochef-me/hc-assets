@@ -1,0 +1,26 @@
+# Secure integration handoff — 6 October 2026
+
+The application routes and UI are wired to the server adapters. This Mac currently shows an authorized **read-only import** of the real Sheet: 51 assets, 7 history events and 67 employee rows. It is a timestamped snapshot, not continuous Google access. All existing asset IDs, costs, currencies and raw legacy fields are preserved. Production writes return 403. `.local/readonly-sheet.json` is private, ignored by Git, and excluded from deployment tracing.
+
+No runtime provider credentials are configured. Do not send secrets in chat. Reuse of the existing BC key requires an approved secure delivery into this application's server environment; the agent has not copied credentials, generated signing secrets, granted access or deployed a gateway. The following are action-time approval/configuration checkpoints, not completed actions.
+
+## Read-only Google connection
+
+1. Approve the existing Google identity and its read access. The connected Google Drive tool already allowed the one-time import; its delegated credentials are not exported into the local Next server.
+2. Securely supply `GOOGLE_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` for an already approved identity, or approve adapting the server token interface to another existing identity. The current adapter uses the Sheets readonly scope. Do not create a service account, share the Sheet, grant OAuth scopes or change IAM without separate approval.
+3. Set `HC_ASSETS_BACKEND=live-readonly`. This reads the known production Sheet directly while continuing to deny writes and paid AI. Compare IDs and counts again without changing headers/data. Never use the old Apps Script read endpoint: its read helpers can create tabs/headers.
+
+## Isolated write/OCR/research acceptance
+
+1. Approve an isolated staging copy and backup, with `HC_ASSETS_SPREADSHEET_ID` different from production. The application rejects the production ID in staging mode. Preserve the 19 Inventory and 9 assignment_history headers and existing IDs. Review the proposed additional tabs before creating them: `HCAssets_records` (`id,version,part,json`), `HCAssets_movements` (`id,json`), `HCAssets_commands` (`requestId,digest,part,json`). These tabs have not been created.
+2. Approve deployment of `integrations/controlled-writer.gs` into exactly one staging Apps Script project and enable its Advanced Sheets service. Securely configure project properties `HC_ASSETS_SPREADSHEET_ID`, `HC_ASSETS_GATEWAY_SECRET` (at least 32 characters) and `HC_ASSETS_WRITE_ENABLED=approved`. A signing secret has not been created. Approve its provisioning/delivery before that action. Configure the matching server `HC_ASSETS_GATEWAY_URL` and `HC_ASSETS_GATEWAY_SECRET`. Commands bind the target Sheet ID and the gateway rejects a mismatch before any write.
+3. Establish exclusive write ownership for that staging copy. ScriptLock cannot fence another project or direct Sheet collaborator. No production writer cutover is approved. Uncertain pending intents stop all later writes; authorized reconciliation is manual and has no automatic expiry/resend.
+4. Securely reuse the approved existing BC `OPENAI_API_KEY`; approve supported model IDs in `HC_ASSETS_OPENAI_MODEL` and `HC_ASSETS_SEARCH_MODEL`, plus paid request scope. Set `HC_ASSETS_BACKEND=staging` and `HC_ASSETS_AI_ENABLED=approved` only after approval. Credentials never enter browser variables or payloads. Server vision receives selected equipment photos; market search receives brand/model/specs/condition, without serials, employee data or purchase costs.
+5. Local request limits default to 20 paid HTTP attempts/day and 4/minute. Configure `HC_ASSETS_AI_DAILY_REQUEST_LIMIT` and `HC_ASSETS_AI_MINUTE_REQUEST_LIMIT` within bounded ranges if approved. Failed attempts count. Resale uses one search call and one extraction call, with at most one web tool call. This is a local request allowance, not a monetary or distributed hosting guarantee.
+6. On the staging copy only, test real camera/upload → actual OCR → human verification → existing serial lookup/new registration → confirmed Sheet readback → assign/transfer/return/repair/retire → cited AED comparables. Validate duplicate identities, concurrent commands, stale revision, lost acknowledgements, pending-intent recovery and history preservation. Use fictional staging employees/assets and approved billable test photos; never create test rows in production.
+
+## Remaining production decisions
+
+Auth remains explicitly deferred. The staging actor is labelled `Local operator (authentication deferred)`, not an authenticated person. Public exposure of real employee inventory, photos, writes or paid endpoints is prohibited until authentication/authorization, trusted actors and appropriate quotas are implemented and approved. The preview binds loopback only; it is not reachable from a physical phone over LAN.
+
+Physical iOS/Android camera permissions, Safari, HEIC support, screen-reader acceptance, private photo storage/retention, capacity, provider availability and monetary costs are untested. Real listings may be inaccessible or lack sufficient exact evidence, yielding no comparable. Asking prices are not completed-sale prices. Production deployment, live writes/cutover, IAM changes and PR publication remain unapproved.

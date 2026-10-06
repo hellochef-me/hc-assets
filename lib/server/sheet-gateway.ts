@@ -58,15 +58,20 @@ export class SheetGatewayError extends Error {
     super(message);
   }
 }
-// Never instantiated by demo routes. A future authenticated route must supply its
-// trusted actor identity. The gateway is the sole writer, not a Node-process mutex.
+// Instantiated only by approved isolated staging routes. Production integration
+// must supply authenticated actor identity. The gateway is the sole writer.
 export class ControlledSheetGateway {
   constructor(
-    private config: { url: string; signingSecret: string },
+    private config: {
+      url: string;
+      signingSecret: string;
+      spreadsheetId: string;
+    },
     private fetcher: typeof fetch = fetch,
     private clock = () => new Date(),
   ) {
     const url = new URL(config.url);
+    z.string().min(1).max(200).parse(config.spreadsheetId);
     if (
       url.protocol !== "https:" ||
       url.hostname !== "script.google.com" ||
@@ -94,6 +99,7 @@ export class ControlledSheetGateway {
     if (action !== "create") z.string().min(1).max(400).parse(assetId);
     const payload = JSON.stringify({
       action,
+      spreadsheetId: this.config.spreadsheetId,
       data,
       actor,
       ...(assetId ? { assetId } : {}),

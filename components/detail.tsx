@@ -17,7 +17,11 @@ import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Timeline, Dialog, date } from "./ui";
 import { AssetFields } from "./asset-fields";
 import { MoveDialog } from "./move-dialog";
+import { useSource } from "./source-context";
+import type { ResaleEvidence } from "@/lib/server/integrations";
 export function Detail({ id }: { id: string }) {
+  const { source, canWrite } = useSource();
+  const [evidence, setEvidence] = useState<ResaleEvidence | null>(null);
   const { snapshot, error, loading, reload } = useInventory();
   const asset = snapshot?.assets.find((a) => a.id === id);
   const [editing, setEditing] = useState(false),
@@ -71,7 +75,12 @@ export function Detail({ id }: { id: string }) {
     setResearching(true);
     setResaleError("");
     try {
-      await request("/api/resale", { method: "POST", body: "{}" });
+      setEvidence(
+        await request<ResaleEvidence>("/api/resale", {
+          method: "POST",
+          body: JSON.stringify({ assetId: id }),
+        }),
+      );
     } catch (e) {
       setResaleError((e as Error).message);
     } finally {
@@ -105,7 +114,14 @@ export function Detail({ id }: { id: string }) {
         <ArrowLeft />
         Inventory <span>/ {asset.id}</span>
       </Link>
-      {confirmed && (
+      {source?.readOnly && (
+        <Notice>
+          Real Sheet record · Read only. Existing ID, costs, currency and legacy
+          history are preserved. Missing location, battery health and function
+          remain Unknown.
+        </Notice>
+      )}
+      {confirmed && canWrite && (
         <div className="confirmed-banner" role="status">
           <Check />
           Saved in the local demo inventory
@@ -122,6 +138,7 @@ export function Detail({ id }: { id: string }) {
         <div className="heading-actions">
           <Button
             variant="secondary"
+            disabled={!canWrite}
             onClick={() => {
               setDraft(inputOf(asset));
               setEditing(true);
@@ -132,7 +149,7 @@ export function Detail({ id }: { id: string }) {
             Edit
           </Button>
           <Button
-            disabled={asset.status === "Retired"}
+            disabled={!canWrite || asset.status === "Retired"}
             onClick={() => setMove(true)}
           >
             <ArrowLeftRight />
@@ -181,7 +198,7 @@ export function Detail({ id }: { id: string }) {
               <span>Purchase cost</span>
               <strong>
                 {asset.purchaseCost
-                  ? `${asset.purchaseCurrency || "Unknown currency"} ${Number(asset.purchaseCost).toLocaleString("en-GB")}`
+                  ? `${asset.purchaseCurrency || "Unknown currency"} ${Number.isFinite(Number(asset.purchaseCost)) ? Number(asset.purchaseCost).toLocaleString("en-GB") : asset.purchaseCost}`
                   : "Unknown"}
               </strong>
               {asset.purchaseDate && (
@@ -201,19 +218,49 @@ export function Detail({ id }: { id: string }) {
         <aside className="card resale-card">
           <p className="eyebrow">SEPARATE FROM PURCHASE COST</p>
           <h2>Estimated resale value</h2>
-          <div className="resale-value">Not researched</div>
+          <div className="resale-value">
+            {evidence?.rangeAED
+              ? `AED ${evidence.rangeAED.low.toLocaleString("en-GB")}–${evidence.rangeAED.high.toLocaleString("en-GB")}`
+              : evidence
+                ? "No verified comparable"
+                : "Not researched"}
+          </div>
           <p className="muted-text">
             A current estimate needs comparable used listings, verified
             condition and a review date.
           </p>
-          <div className="resale-empty">
-            <RefreshCw />
-            <h3>No market sources yet</h3>
-            <p>
-              No estimate has been fabricated. The live research provider is not
-              connected in this preview.
-            </p>
-          </div>
+          {!evidence && (
+            <div className="resale-empty">
+              <RefreshCw />
+              <h3>No market sources yet</h3>
+              <p>
+                {source?.aiEnabled
+                  ? "Run research to check current UAE asking prices and their sources."
+                  : "No estimate has been fabricated. Secure server configuration is required for live research."}
+              </p>
+            </div>
+          )}
+          {evidence && (
+            <div className="market-evidence">
+              <p>
+                Checked{" "}
+                {evidence.asOf ? date(evidence.asOf) : "No usable dated source"}
+              </p>
+              {evidence.comparables.map((c) => (
+                <p key={c.url}>
+                  <a href={c.url} target="_blank" rel="noopener noreferrer">
+                    {c.title}
+                  </a>
+                  <br />
+                  {c.currency} {c.price.toLocaleString("en-GB")} · {c.region} ·{" "}
+                  {c.condition} · Checked {date(c.checkedAt)}
+                </p>
+              ))}
+              {evidence.limitations.map((limitation, i) => (
+                <small key={i}>{limitation}</small>
+              ))}
+            </div>
+          )}
           <Notice warning>
             Inspect battery health and working condition before resale.
           </Notice>
@@ -223,9 +270,9 @@ export function Detail({ id }: { id: string }) {
           </Button>
           {resaleError && <Notice warning>{resaleError}</Notice>}
           <small>
-            Future research will prefer UAE listings in AED, with source links,
-            checked dates and a price range. Foreign currencies require explicit
-            conversion evidence.
+            Research accepts verifiable used UAE listings in AED, with source
+            links, checked dates and a price range. Unsupported currencies are
+            excluded.
           </small>
         </aside>
       </div>

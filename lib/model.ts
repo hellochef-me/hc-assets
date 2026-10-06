@@ -102,6 +102,14 @@ export interface Snapshot {
   assets: Asset[];
   people: Person[];
   history: Movement[];
+  source?: PreviewSource;
+}
+export interface PreviewSource {
+  kind: "demo" | "sheet-snapshot" | "staging" | "live-readonly";
+  label: string;
+  readOnly: boolean;
+  checkedAt: string | null;
+  aiEnabled: boolean;
 }
 export const movementInput = z
   .object({

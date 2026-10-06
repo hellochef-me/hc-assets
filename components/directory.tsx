@@ -4,11 +4,13 @@ import { useState } from "react";
 import { User, MapPin, Search } from "lucide-react";
 import { useInventory } from "./use-inventory";
 import { Button, Empty, Notice, Timeline, Badge } from "./ui";
+import { useSource } from "./source-context";
 export function Directory({
   kind,
 }: {
   kind: "people" | "locations" | "activity";
 }) {
+  const { source } = useSource();
   const { snapshot, error, loading, reload } = useInventory();
   const [query, setQuery] = useState(""),
     [selected, setSelected] = useState("");
@@ -17,7 +19,10 @@ export function Directory({
     kind === "people"
       ? snapshot?.people.map((p) => ({ name: p.name, secondary: p.department }))
       : Array.from(new Set(snapshot?.assets.map((a) => a.location) || [])).map(
-          (name) => ({ name, secondary: "Workspace location" }),
+          (name) => ({
+            name: name || "Unknown",
+            secondary: "Workspace location",
+          }),
         );
   const filtered = groups?.filter((g) =>
     g.name.toLowerCase().includes(query.toLowerCase()),
@@ -30,8 +35,12 @@ export function Directory({
           <h1>{title}</h1>
           <p className="subtitle">
             {kind === "activity"
-              ? "Every demo movement, with the person and time recorded."
-              : "Fictional preview directory"}
+              ? source?.kind === "demo"
+                ? "Every demo movement, with the person and time recorded."
+                : "Sheet history; fields never recorded remain Unknown."
+              : source?.kind === "demo"
+                ? "Fictional preview directory"
+                : `${source?.label || "Sheet directory"} · ${snapshot?.people.length ?? "…"} employee rows${source?.readOnly ? " · Read only" : ""}`}
           </p>
         </div>
       </div>
@@ -91,7 +100,7 @@ export function Directory({
                 const assets = snapshot!.assets.filter((a) =>
                   kind === "people"
                     ? a.assignee === g.name
-                    : a.location === g.name,
+                    : (a.location || "Unknown") === g.name,
                 );
                 return (
                   <button
@@ -122,7 +131,7 @@ export function Directory({
                   .filter((a) =>
                     kind === "people"
                       ? a.assignee === selected
-                      : a.location === selected,
+                      : (a.location || "Unknown") === selected,
                   )
                   .map((a) => (
                     <Link
@@ -136,7 +145,7 @@ export function Directory({
                 {!snapshot!.assets.some((a) =>
                   kind === "people"
                     ? a.assignee === selected
-                    : a.location === selected,
+                    : (a.location || "Unknown") === selected,
                 ) && <p>No assets here.</p>}
               </section>
             )}

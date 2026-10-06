@@ -1,0 +1,15 @@
+# Phone preview proposal — not activated
+
+Read-only network inspection found the active `en0` IPv4 address **192.168.0.57**, netmask 255.255.254.0, and local host name `Anthonys-MacBook-Pro-2`. Addresses can change. This has not been tested from the phone. Both current servers bind only 127.0.0.1 (3405 real read-only snapshot; 3406 isolated fictional fixtures). Neither is a phone link.
+
+Proposed exposure for review: a **separate fictional-only, read-only phone preview on 192.168.0.57:3407**, available only on the current local network. It must serve fixed fictional fixtures independently of `.local/readonly-sheet.json`, not proxy the real-data API. All mutations, OCR and resale routes must return 403 before provider/store access. It should reuse the interface for inventory, detail, filters, camera/upload and human review. Fictional registrations/movements can be reviewed but cannot persist over LAN under this proposal. The current loopback guard rejects LAN requests; the restricted serving boundary needs implementation/verification before activation. Do not simply rebind the real-data Next server.
+
+The proposed URL would be `http://192.168.0.57:3407/scan`, **only after approval, restricted-mode implementation and successful listener/phone verification**. No usable LAN URL is claimed now. Bind only that interface/IP, not 0.0.0.0; stop after acceptance. No public tunnel, router forwarding, firewall change, credentials, Sheet access or paid endpoint would be enabled. Any required macOS network/firewall prompt is a separate user approval step.
+
+The phone must be on a network that can reach this Mac, without client isolation or routing/VPN restrictions. Plain HTTP on a LAN IP is not the localhost secure-context exception: live `getUserMedia` requires a secure context and browser permission. [MDN getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia). Upload and the native device-camera picker provide a fallback; the capture attribute is a browser hint, not a guarantee. [MDN capture](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture). Physical phone behavior is untested.
+
+No approved existing local HTTPS endpoint/certificate was supplied or verified. Do not install/trust certificates, bypass certificate warnings or enable insecure-camera flags. A separately approved trusted HTTPS arrangement is needed to test the live viewfinder on a physical phone.
+
+**Exact action-time approval request for the parent:** “May I start a separate read-only fictional HCAssets preview on this Mac's LAN address 192.168.0.57, port 3407, for your phone? Devices that can reach that LAN address could view the fictional preview. Real Sheet data, saved photos, all writes and paid AI stay inaccessible. I won't alter firewall rules, use a public tunnel or install certificates. Photo upload/device-camera capture will work where your phone supports them; live camera preview requires a separately approved HTTPS setup.”
+
+Explicit approval is required by the delegated network instruction before changing listener/network isolation. Parent owns the user approval conversation.

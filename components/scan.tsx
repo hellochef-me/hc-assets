@@ -25,11 +25,23 @@ import {
   compressPhoto,
   fetchSnapshot,
   saveAsset,
+  request,
 } from "@/lib/client";
 import { Button, Notice, Device } from "./ui";
 import { AssetFields } from "./asset-fields";
+import { CameraCapture } from "./camera-capture";
+import { useSource } from "./source-context";
+import type { PhotoExtraction } from "@/lib/server/integrations";
 const draftKey = "hcassets.demo.registration.v2";
 export function Scan({ manual = false }: { manual?: boolean }) {
+  const { source, canWrite } = useSource();
+  const [cameraOpen, setCameraOpen] = useState(false),
+    [recognizing, setRecognizing] = useState(false),
+    [recognitionNotice, setRecognitionNotice] = useState("");
+  const recognition = useRef<{
+    generation: number;
+    controller?: AbortController;
+  }>({ generation: 0 });
   const router = useRouter();
   const [asset, setAsset] = useState<AssetInput>(blankAsset),
     [step, setStep] = useState(manual ? 1 : 0),
@@ -46,6 +58,76 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     cameraInput = useRef<HTMLInputElement>(null),
     operation = useRef(0),
     receipt = useRef({ payload: "", id: "" });
+  useEffect(
+    () => () => {
+      operation.current++;
+      recognition.current.generation++;
+      recognition.current.controller?.abort();
+    },
+    [],
+  );
+  function cancelRecognition() {
+    recognition.current.generation++;
+    recognition.current.controller?.abort();
+    setRecognizing(false);
+  }
+  async function readLabel(photoData: string[]) {
+    if (!source?.aiEnabled) {
+      setRecognitionNotice(
+        "Photo attached. Live OCR is not configured; enter readable label details manually. No AI extraction has been performed.",
+      );
+      return;
+    }
+    cancelRecognition();
+    const controller = new AbortController();
+    const token = recognition.current.generation;
+    recognition.current.controller = controller;
+    setRecognizing(true);
+    setRecognitionNotice("");
+    try {
+      const extracted = await request<PhotoExtraction>("/api/scan", {
+        method: "POST",
+        body: JSON.stringify({ photos: photoData }),
+        signal: controller.signal,
+      });
+      if (token !== recognition.current.generation) return;
+      setAsset((current) => ({
+        ...current,
+        brand: current.brand || extracted.brand || "",
+        model: current.model || extracted.model || "",
+        name:
+          current.name ||
+          [extracted.brand, extracted.model].filter(Boolean).join(" "),
+        serial: current.serial || extracted.serial || "",
+        specs: current.specs || extracted.specs || "",
+        serialChecked: current.serial ? current.serialChecked : false,
+        specsChecked: current.specs ? current.specsChecked : false,
+      }));
+      setRecognitionNotice(
+        "AI label suggestions are ready for human review. Your existing entries were kept. Check the serial and visible specifications; missing fields remain Unknown.",
+      );
+    } catch (e) {
+      if (token === recognition.current.generation)
+        setRecognitionNotice(
+          `${(e as Error).message} You can continue with manual details.`,
+        );
+    } finally {
+      if (token === recognition.current.generation) setRecognizing(false);
+    }
+  }
+  function captured(data: string) {
+    setCameraOpen(false);
+    if (asset.photos.length >= 3) {
+      setError(
+        "Keep up to three photos. Remove an existing photo before adding another.",
+      );
+      return;
+    }
+    const photoData = [...asset.photos, data];
+    setAsset((current) => ({ ...current, photos: [...current.photos, data] }));
+    setStep(1);
+    void readLabel(photoData);
+  }
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(draftKey);
@@ -109,6 +191,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       if (token !== operation.current) return;
       setAsset((a) => ({ ...a, photos: [...a.photos, ...data] }));
       setStep(1);
+      void readLabel([...asset.photos, ...data]);
     } catch (e) {
       if (token === operation.current) setError((e as Error).message);
     } finally {
@@ -152,6 +235,12 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         setMatches(found);
         setError(
           "Multiple existing records have this serial. Choose a record to inspect; no records were merged.",
+        );
+        return;
+      }
+      if (!canWrite) {
+        setError(
+          "No existing asset matches this serial. This real Sheet snapshot is read only; registration requires the approved controlled writer.",
         );
         return;
       }
@@ -220,7 +309,13 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           <ArrowLeft />
           Inventory
         </Link>
-        <span className="demo-badge">Demo registration</span>
+        <span className="demo-badge">
+          {source?.kind === "demo"
+            ? "Demo registration"
+            : source?.readOnly
+              ? "Read-only lookup"
+              : "Staging registration"}
+        </span>
       </div>
       <ol className="steps" aria-label="Registration progress">
         {["Capture", "Review", "Confirm"].map((s, i) => (
@@ -278,44 +373,59 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               Good lighting helps
             </span>
           </div>
-          <div className="camera-stage">
-            <div className="capture-frame">
-              <ScanLine />
-              <p>Keep the whole label in view</p>
-              <small>Use your phone camera or choose a photo</small>
+          {cameraOpen ? (
+            <CameraCapture
+              onCaptured={captured}
+              onCancel={() => setCameraOpen(false)}
+              onUpload={() => {
+                setCameraOpen(false);
+                photoInput.current?.click();
+              }}
+              onNativeCapture={() => {
+                setCameraOpen(false);
+                cameraInput.current?.click();
+              }}
+            />
+          ) : (
+            <div className="camera-stage">
+              <div className="capture-frame">
+                <ScanLine />
+                <p>Keep the whole label in view</p>
+                <small>Use your phone camera or choose a photo</small>
+              </div>
+              <div className="capture-controls">
+                <Button
+                  variant="secondary"
+                  aria-label="Upload photo"
+                  onClick={() => photoInput.current?.click()}
+                  disabled={preparing}
+                >
+                  <ImagePlus />
+                  Upload
+                </Button>
+                <Button
+                  className="shutter"
+                  aria-label="Take photo"
+                  onClick={() => setCameraOpen(true)}
+                  disabled={preparing}
+                >
+                  <Camera />
+                </Button>
+                <Button
+                  variant="quiet"
+                  disabled={preparing}
+                  onClick={() => {
+                    setStep(1);
+                    setError("");
+                  }}
+                >
+                  Enter
+                  <br />
+                  manually
+                </Button>
+              </div>
             </div>
-            <div className="capture-controls">
-              <Button
-                variant="secondary"
-                aria-label="Upload photo"
-                onClick={() => photoInput.current?.click()}
-                disabled={preparing}
-              >
-                <ImagePlus />
-                Upload
-              </Button>
-              <Button
-                className="shutter"
-                aria-label="Take photo"
-                onClick={() => cameraInput.current?.click()}
-                disabled={preparing}
-              >
-                <Camera />
-              </Button>
-              <Button
-                variant="quiet"
-                disabled={preparing}
-                onClick={() => {
-                  setStep(1);
-                  setError("");
-                }}
-              >
-                Enter
-                <br />
-                manually
-              </Button>
-            </div>
-          </div>
+          )}
           <input
             hidden
             ref={cameraInput}
@@ -345,18 +455,21 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           <p className="capture-help">
             JPG, PNG or WebP · Up to 3 photos · 20 MB per original
             <br />
-            Photo recognition is not connected. You can review and enter label
-            details.
+            {source?.aiEnabled
+              ? "Server recognition runs after a photo is attached. You review every suggestion."
+              : "Live OCR is not configured. Camera capture and uploads work; enter label details manually."}
           </p>
-          <div className="demo-samples">
-            <small>Explore with a fictional label</small>
-            <Button variant="secondary" onClick={() => sample(true)}>
-              Find existing sample
-            </Button>
-            <Button variant="quiet" onClick={() => sample(false)}>
-              Register new sample
-            </Button>
-          </div>
+          {source?.kind === "demo" && (
+            <div className="demo-samples">
+              <small>Explore with a fictional label</small>
+              <Button variant="secondary" onClick={() => sample(true)}>
+                Find existing sample
+              </Button>
+              <Button variant="quiet" onClick={() => sample(false)}>
+                Register new sample
+              </Button>
+            </div>
+          )}
         </section>
       ) : step === 1 ? (
         <section className="review-stage" key="review">
@@ -390,9 +503,37 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             )}
           </div>
           <Notice>
-            Enter details you can read from the device. Recognition is
-            unavailable in this local demo.
+            {recognizing
+              ? "Reading label with the server provider… Your edits will be preserved."
+              : recognitionNotice ||
+                "Enter only details you can read from the device. Live OCR requires secure server configuration; no extraction has been performed."}
+            {recognizing && (
+              <Button variant="quiet" onClick={cancelRecognition}>
+                Cancel recognition
+              </Button>
+            )}
           </Notice>
+          {!!asset.photos.length && (
+            <div className="photo-review-actions">
+              <Button
+                variant="secondary"
+                disabled={recognizing || !source?.aiEnabled}
+                onClick={() => void readLabel(asset.photos)}
+              >
+                Read label
+              </Button>
+              <Button
+                variant="quiet"
+                onClick={() => {
+                  cancelRecognition();
+                  setStep(0);
+                  setCameraOpen(true);
+                }}
+              >
+                Add or retake photo
+              </Button>
+            </div>
+          )}
           <form onSubmit={continueReview}>
             <AssetFields
               asset={asset}
@@ -406,8 +547,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                   checked={unknownConfirmed}
                   onChange={(e) => setUnknownConfirmed(e.target.checked)}
                 />
-                Serial is missing or unreadable. Save as Unknown and review
-                later.
+                {canWrite
+                  ? "Serial is missing or unreadable. Save as Unknown and review later."
+                  : "Serial is missing or unreadable. Read-only lookup needs a serial or inventory search."}
               </label>
             )}
             <div className="sticky-actions">
@@ -419,6 +561,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 variant="secondary"
                 disabled={checking}
                 onClick={() => {
+                  cancelRecognition();
                   setStep(0);
                   setError("");
                   setMatches([]);
@@ -440,7 +583,12 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               <Device asset={asset} />
               <div>
                 <h2>{asset.name}</h2>
-                <span>{asset.category} · New demo record</span>
+                <span>
+                  {asset.category} ·{" "}
+                  {source?.kind === "demo"
+                    ? "New demo record"
+                    : "New staging record"}
+                </span>
               </div>
             </div>
             <dl>
@@ -504,7 +652,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           </div>
           <Notice warning>Nothing is saved until the server confirms.</Notice>
           <div className="sticky-actions">
-            <Button onClick={save} disabled={saving}>
+            <Button onClick={save} disabled={saving || !canWrite}>
               {saving ? "Saving asset…" : "Save asset"}
             </Button>
             <Button

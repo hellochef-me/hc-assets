@@ -187,4 +187,9 @@ export class LocalStore {
     }
   }
 }
-export const store = new LocalStore(path.join(process.cwd(), ".local"));
+const demoNamespace = process.env.HC_ASSETS_DEMO_SUBDIRECTORY || "";
+if (demoNamespace && !/^[a-zA-Z0-9_-]{1,80}$/.test(demoNamespace))
+  throw new Error("Invalid demo store namespace.");
+export const store = new LocalStore(
+  path.join(process.cwd(), ".local", demoNamespace),
+);

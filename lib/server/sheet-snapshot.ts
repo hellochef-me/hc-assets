@@ -59,7 +59,11 @@ export function decodeControlledSnapshot(tables: unknown[][][]): Snapshot {
   ];
   tables.forEach((table, i) => {
     // Exact schemas are reviewed/provisioned later. Never auto-change live headers.
-    if (JSON.stringify(table[0]) !== JSON.stringify(expected[i]))
+    if (
+      JSON.stringify(
+        i === 2 ? table[0]?.map((h) => String(h).toLowerCase()) : table[0],
+      ) !== JSON.stringify(expected[i])
+    )
       throw new ProviderError(
         "configuration",
         "The Sheet schema needs review.",

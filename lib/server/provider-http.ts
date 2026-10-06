@@ -3,7 +3,11 @@ import "server-only";
 export class ProviderError extends Error {
   constructor(
     public code:
-      "configuration" | "unavailable" | "invalid_response" | "uncertain_write",
+      | "configuration"
+      | "unavailable"
+      | "invalid_response"
+      | "uncertain_write"
+      | "limit",
     message: string,
   ) {
     super(message);
@@ -24,7 +28,8 @@ export async function providerJson(
       cache: "no-store",
       signal: AbortSignal.timeout(25_000),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ProviderError) throw error;
     throw new ProviderError(
       "unavailable",
       "The service did not respond. Try again explicitly.",

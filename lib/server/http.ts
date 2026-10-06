@@ -1,5 +1,7 @@
 import "server-only";
 import { StoreError } from "./store";
+import { ProviderError } from "./provider-http";
+import { SheetGatewayError } from "./sheet-gateway";
 export const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 export function guard(request: Request) {
@@ -60,6 +62,17 @@ export async function body(request: Request) {
 export function failure(e: unknown) {
   if (e instanceof StoreError)
     return json({ error: e.message, assetId: e.assetId }, e.status);
+  if (e instanceof ProviderError)
+    return json({ error: e.message }, e.code === "limit" ? 429 : 503);
+  if (e instanceof SheetGatewayError)
+    return json(
+      { error: e.message },
+      ["duplicate", "conflict"].includes(e.code)
+        ? 409
+        : e.code === "invalid"
+          ? 400
+          : 503,
+    );
   return json(
     {
       error:

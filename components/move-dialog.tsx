@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./select";
 import { useRef, useState } from "react";
 import { Asset, Person, movements, movementInput } from "@/lib/model";
 import { request } from "@/lib/client";
@@ -74,18 +75,18 @@ export function MoveDialog({
           {asset.name} · {asset.id}
         </p>
         <Field label="Movement">
-          <select
+          <Select
             value={action}
             onChange={(e) => setAction(e.target.value as typeof action)}
           >
             {movements.map((m) => (
               <option key={m}>{m}</option>
             ))}
-          </select>
+          </Select>
         </Field>
         {["Assign", "Transfer"].includes(action) && (
           <Field label="Assign to">
-            <select
+            <Select
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
               required
@@ -94,7 +95,7 @@ export function MoveDialog({
               {people.map((p) => (
                 <option key={p.name}>{p.name}</option>
               ))}
-            </select>
+            </Select>
           </Field>
         )}
         <Field label="Destination">

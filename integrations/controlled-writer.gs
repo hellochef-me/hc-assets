@@ -19,6 +19,7 @@ function doPost(e) {
     var envelope = JSON.parse(e.postData.contents);
     if (typeof envelope.payload !== "string" || !safeEqual(sign(envelope.payload, secret), envelope.signature)) throw writerError("invalid", "Invalid request signature.");
     var command = JSON.parse(envelope.payload);
+    if (command.spreadsheetId !== spreadsheetId) throw writerError("configuration", "The gateway targets a different Sheet. No changes were made.");
     if (!command.issuedAt || Math.abs(Date.now() - Date.parse(command.issuedAt)) > 300000 || !Number.isFinite(Date.parse(command.issuedAt))) throw writerError("invalid", "Expired request.");
     if (!lock.tryLock(20000)) throw writerError("busy", "The writer is busy. Retry the same request ID.");
     var asset = commitCommand(command, spreadsheetId);
@@ -64,7 +65,7 @@ var HISTORY_HEADERS = ["id", "assetId", "assetName", "serialNumber", "fromAssign
 function commitCommand(command, spreadsheetId) {
   var d = command.data; var action = command.action;
   if (!d || !/^[a-f0-9-]{36}$/i.test(d.requestId) || ["create", "edit", "move"].indexOf(action) < 0 || typeof command.actor !== "string" || !command.actor.trim() || command.actor.length > 200) throw writerError("invalid", "Invalid command.");
-  var digest = hash(JSON.stringify({ action: action, data: d, actor: command.actor, assetId: command.assetId || "" }));
+  var digest = hash(JSON.stringify({ spreadsheetId: command.spreadsheetId, action: action, data: d, actor: command.actor, assetId: command.assetId || "" }));
   var tabs = ["Inventory", "assignment_history", "Employees", "HCAssets_records", "HCAssets_movements", "HCAssets_commands"];
   var values = Sheets.Spreadsheets.Values.batchGet(spreadsheetId, { ranges: tabs.map(function(t) { return "'" + t + "'!A:ZZ"; }), valueRenderOption: "FORMATTED_VALUE" }).valueRanges;
   if (!values || values.length !== tabs.length) throw writerError("configuration", "Required Sheet tabs are missing.");

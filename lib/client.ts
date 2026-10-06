@@ -13,7 +13,9 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
     r = await fetch(url, {
       ...init,
       headers: { "Content-Type": "application/json", ...init?.headers },
-      signal: AbortSignal.timeout(20000),
+      signal: init?.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(90000)])
+        : AbortSignal.timeout(90000),
     });
   } catch {
     throw new ApiError(

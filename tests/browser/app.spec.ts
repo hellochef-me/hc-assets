@@ -280,7 +280,8 @@ test("filters, preview and keyboard navigation", async ({ page }) => {
   });
   await page.getByRole("button", { name: "Close preview" }).click();
   await page.getByRole("button", { name: "Reset", exact: true }).click();
-  await page.getByLabel("Category filter").selectOption("Monitor");
+  await page.getByRole("combobox", { name: "Category filter" }).click();
+  await page.getByRole("option", { name: "Monitor", exact: true }).click();
   await expect(page.getByText("Showing 1 of 7 demo assets")).toBeVisible();
 });
 test("photo preparation, invalid format and cancellation retain manual path", async ({
@@ -426,9 +427,8 @@ test("movement remains pending until confirmed, updates actor/from/to history", 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/assets/DEMO-002");
   await page.getByRole("button", { name: "Move or assign" }).click();
-  await page
-    .getByLabel("Assign to", { exact: true })
-    .selectOption("Nora Ellis");
+  await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
+  await page.getByRole("option", { name: "Nora Ellis", exact: true }).click();
   await page.getByLabel("Destination", { exact: true }).fill("Studio 2");
   await page.getByLabel("Movement notes").fill("Fictional handover");
   await page.getByRole("button", { name: "Confirm movement" }).click();
@@ -505,9 +505,8 @@ test("real browser save, edit and assignment are confirmed by local API", async 
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Move or assign" }).click();
-  await page
-    .getByLabel("Assign to", { exact: true })
-    .selectOption("Nora Ellis");
+  await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
+  await page.getByRole("option", { name: "Nora Ellis", exact: true }).click();
   await page.getByRole("button", { name: "Confirm movement" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page.locator(".assignment-bridge")).toContainText("Nora Ellis");

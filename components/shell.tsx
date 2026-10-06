@@ -4,7 +4,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, Database, Settings } from "lucide-react";
 import { Button } from "./ui";
+import { useSource } from "./source-context";
 export function Shell({ children }: { children: React.ReactNode }) {
+  const { source } = useSource();
   const path = usePathname(),
     [menu, setMenu] = useState(false);
   return (
@@ -58,7 +60,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="header-meta">
           <span className="demo-badge">
             <Database />
-            Local demo
+            {source?.label || "Checking source…"}
           </span>
           <Link
             href="/settings"
@@ -73,7 +75,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <footer className="site-footer">
-        Fictional preview data · Live Sheets and AI are not connected
+        {source?.kind === "demo"
+          ? "Fictional preview data · Saves stay on this computer"
+          : source?.kind === "sheet-snapshot"
+            ? `Real Sheet snapshot · Read only · Read ${source.checkedAt ? new Date(source.checkedAt).toLocaleString("en-GB") : "Unknown"} · Refreshing this page does not reread Google Sheets`
+            : source
+              ? `${source.label} · ${source.readOnly ? "Writes disabled" : "Controlled staging writes"}`
+              : "Source not confirmed · Writes unavailable"}
       </footer>
     </>
   );
