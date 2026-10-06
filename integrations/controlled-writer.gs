@@ -93,7 +93,11 @@ function commitCommand(command, spreadsheetId) {
   if (action !== "create" && before.version !== d.expectedVersion) throw writerError("conflict", "Asset changed. Reload before saving.");
   if (before && before.status === "Retired" && action === "move") throw writerError("invalid", "Retired assets cannot be moved.");
   var now = new Date().toISOString(); var after;
-  if (action === "create" || action === "edit") {
+  var notesOnly = action === "edit" && Object.prototype.hasOwnProperty.call(d, "notes");
+  if (notesOnly) {
+    if (typeof d.notes !== "string" || d.notes.length > 2000 || d.asset) throw writerError("invalid", "Invalid notes.");
+    after = Object.assign({}, before, { notes: d.notes, updatedAt: now, version: before.version + 1 });
+  } else if (action === "create" || action === "edit") {
     validateAsset(d.asset, before ? before.assignee : "");
     after = Object.assign({}, before || {}, d.asset, { id: before ? before.id : Utilities.getUuid(), assignee: before ? before.assignee : "", status: before && (before.status === "Retired" || before.status === "Repair") ? before.status : before && before.assignee ? "Assigned" : (!d.asset.serial || !d.asset.specs || d.asset.condition === "Unknown" ? "Needs review" : "Available"), createdAt: before ? before.createdAt : now, updatedAt: now, version: before ? before.version + 1 : 1 });
     if (after.serial && inventory.some(function(row) { return row[0] !== after.id && identity(row[5]) === identity(after.serial); })) throw writerError("duplicate", "This serial already exists. Open the existing asset.");
@@ -114,7 +118,7 @@ function commitCommand(command, spreadsheetId) {
     if (unchanged && before[unchanged] === after[unchanged]) return;
     row[column] = projections[h];
   });
-  var movement = { id: Utilities.getUuid(), assetId: after.id, action: action === "create" ? "Created" : action === "edit" ? "Edited" : d.action, actor: command.actor, at: now, from: { assignee: before ? before.assignee : "", location: before ? before.location : "", status: before ? before.status : "" }, to: { assignee: after.assignee, location: after.location, status: after.status }, notes: action === "move" ? d.notes : after.notes };
+  var movement = { id: Utilities.getUuid(), assetId: after.id, action: action === "create" ? "Created" : notesOnly ? "Notes updated" : action === "edit" ? "Edited" : d.action, actor: command.actor, at: now, from: { assignee: before ? before.assignee : "", location: before ? before.location : "", status: before ? before.status : "" }, to: { assignee: after.assignee, location: after.location, status: after.status }, notes: action === "move" ? d.notes : after.notes };
   var properties = Sheets.Spreadsheets.get(spreadsheetId, { fields: "sheets.properties" }).sheets;
   var sheetIds = {}; properties.forEach(function(sheet) { sheetIds[sheet.properties.title] = sheet.properties.sheetId; });
   if (tabs.some(function(t) { return sheetIds[t] === undefined; })) throw writerError("configuration", "Required Sheet tabs are missing.");

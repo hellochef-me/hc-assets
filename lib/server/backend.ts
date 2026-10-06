@@ -210,7 +210,9 @@ export async function intelligence(task: "ocr" | "resale" = "ocr") {
   const source = await previewSource();
   if (!(task === "ocr" ? source.ocrEnabled : source.resaleEnabled))
     throw new StoreError(
-      "Live AI is not connected. Secure server configuration and spending approval are required. Enter label details manually.",
+      task === "resale"
+        ? "Resale research is disabled. Its server research configuration must be enabled before checking market sources."
+        : "Photo OCR is not connected. Enter readable label details manually.",
       503,
     );
   return new OpenAiAssetIntelligence(

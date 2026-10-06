@@ -24,12 +24,13 @@ import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Timeline, Dialog, date } from "./ui";
 import { AssetFields } from "./asset-fields";
 import { MoveDialog } from "./move-dialog";
+import { AssetNotes } from "./asset-notes";
 import { useSource } from "./source-context";
 import type { ResaleEvidence } from "@/lib/server/integrations";
 export function Detail({ id }: { id: string }) {
   const { source, canWrite } = useSource();
   const [evidence, setEvidence] = useState<ResaleEvidence | null>(null);
-  const { snapshot, error, loading, reload } = useInventory();
+  const { snapshot, error, loading, reload, setSnapshot } = useInventory();
   const asset = snapshot?.assets.find((a) => a.id === id);
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<AssetInput | null>(null),
@@ -228,7 +229,6 @@ export function Detail({ id }: { id: string }) {
             <p className="muted-text">
               Battery health and working condition: Unknown
             </p>
-            {asset.notes && <p className="asset-notes">{asset.notes}</p>}
           </section>
           <section className="card movement-card">
             <h2>Assignment & movement</h2>
@@ -256,7 +256,7 @@ export function Detail({ id }: { id: string }) {
               <p>
                 {(source?.resaleEnabled ?? source?.aiEnabled)
                   ? "Run research to check current UAE asking prices and their sources."
-                  : "No estimate has been fabricated. Secure server configuration is required for live research."}
+                  : "Resale research is currently disabled. Photo OCR is configured separately."}
               </p>
             </div>
           )}
@@ -284,9 +284,17 @@ export function Detail({ id }: { id: string }) {
           <Notice warning>
             Inspect battery health and working condition before resale.
           </Notice>
-          <Button variant="secondary" onClick={research} disabled={researching}>
+          <Button
+            variant="secondary"
+            onClick={research}
+            disabled={
+              researching || !(source?.resaleEnabled ?? source?.aiEnabled)
+            }
+          >
             <RefreshCw />
-            {researching ? "Checking availability…" : "Research resale value"}
+            {researching
+              ? "Researching current listings…"
+              : "Research resale value"}
           </Button>
           {resaleError && <Notice warning>{resaleError}</Notice>}
           <small>
@@ -296,6 +304,22 @@ export function Detail({ id }: { id: string }) {
           </small>
         </aside>
       </div>
+      <AssetNotes
+        key={id}
+        asset={asset}
+        canWrite={canWrite}
+        onUpdated={(saved) => {
+          setSnapshot(
+            (current) =>
+              current && {
+                ...current,
+                assets: current.assets.map((item) =>
+                  item.id === saved.id ? saved : item,
+                ),
+              },
+          );
+        }}
+      />
       <MoveDialog
         key={`${id}-${asset.version}`}
         asset={asset}

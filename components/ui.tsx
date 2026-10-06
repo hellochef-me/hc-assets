@@ -3,6 +3,7 @@ import {
   ButtonHTMLAttributes,
   ReactNode,
   ReactElement,
+  Ref,
   Children,
   cloneElement,
   useId,
@@ -29,6 +30,7 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "quiet" | "dark";
+  ref?: Ref<HTMLButtonElement>;
 }) {
   return <button {...props} className={`button ${variant} ${className}`} />;
 }

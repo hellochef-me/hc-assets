@@ -249,3 +249,117 @@ for (const transport of ["direct", "gateway"] as const)
       await writer.clean();
     }
   });
+
+for (const transport of ["direct", "gateway"] as const)
+  test(`${transport} notes-only saves preserve every other legacy column and replay lost acknowledgements`, async () => {
+    const writer = await setup();
+    try {
+      const client =
+        transport === "direct" ? writer.client() : writer.mock.client();
+      const original = [
+        "legacy-notes-id",
+        "original_category",
+        "Original asset",
+        "Dell",
+        "Latitude 5440",
+        "UNREVIEWED-DUPLICATE",
+        "Original CPU",
+        "16",
+        "512",
+        "2023",
+        "00042.00",
+        "USD",
+        "original date",
+        "original_condition",
+        "",
+        "spare",
+        "Existing\nnotes",
+        "original creation",
+        "original update",
+      ];
+      writer.mock.tables[0].push([...original]);
+      writer.mock.tables[0].push(
+        original.map((value, index) =>
+          index === 0 ? "other-legacy-id" : value,
+        ),
+      );
+      const command = {
+        notes: "Replacement\n" + "x".repeat(1950),
+        expectedVersion: 1,
+        requestId: randomUUID(),
+      };
+      writer.mock.lose();
+      await assert.rejects(
+        client.commit("edit", command, "Fictional operator", original[0]),
+        /unconfirmed/,
+      );
+      const saved = await client.commit(
+        "edit",
+        command,
+        "Fictional operator",
+        original[0],
+      );
+      assert.equal(saved.notes, command.notes);
+      assert.equal(saved.location, "");
+      assert.equal(saved.serialChecked, false);
+      assert.equal(writer.mock.calls(), 1);
+      writer.mock.tables[0][1].forEach((value, index) => {
+        if (index !== 16 && index !== 18) assert.equal(value, original[index]);
+      });
+      assert.deepEqual(
+        writer.mock.tables[0][2],
+        original.map((value, index) =>
+          index === 0 ? "other-legacy-id" : value,
+        ),
+      );
+      assert.equal(writer.mock.tables[1][1][8], "Notes updated");
+      await assert.rejects(
+        client.commit(
+          "edit",
+          { ...command, requestId: randomUUID() },
+          "Fictional operator",
+          original[0],
+        ),
+        /changed/,
+      );
+      await assert.rejects(
+        client.commit(
+          "edit",
+          {
+            ...command,
+            notes: "x".repeat(2001),
+            expectedVersion: 2,
+            requestId: randomUUID(),
+          },
+          "Fictional operator",
+          original[0],
+        ),
+        /2,000/,
+      );
+      await assert.rejects(
+        client.commit(
+          "edit",
+          {
+            ...command,
+            asset: input().asset,
+            expectedVersion: 2,
+            requestId: randomUUID(),
+          },
+          "Fictional operator",
+          original[0],
+        ),
+      );
+      assert.equal(writer.mock.calls(), 1);
+      const cleared = await client.commit(
+        "edit",
+        { notes: "", expectedVersion: 2, requestId: randomUUID() },
+        "Fictional operator",
+        original[0],
+      );
+      assert.equal(cleared.notes, "");
+      assert.equal(writer.mock.calls(), 2);
+      assert.equal(writer.mock.tables[1].length, 3);
+    } finally {
+      await writer.clean();
+    }
+  });

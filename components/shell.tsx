@@ -15,9 +15,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
       <header className="site-header">
-        <Link className="brand" href="/" aria-label="Hello Chef HCAssets home">
-          <img src="/hello-chef.svg" alt="Hello Chef" />
-          <span>HCAssets</span>
+        <Link className="brand" href="/" aria-label="HCAssets home">
+          <img src="/brand/hcassets-logo.svg" alt="HCAssets" width={196} height={40} />
         </Link>
         <Button
           variant="quiet"

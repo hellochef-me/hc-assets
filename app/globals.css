@@ -791,6 +791,51 @@ dd {
   font-size: 14px;
   margin-top: 12px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.notes-card {
+  margin-top: 20px;
+}
+.notes-heading {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 20px;
+}
+.notes-heading h2 {
+  margin-bottom: 8px;
+}
+.notes-heading p {
+  margin: 0;
+}
+.notes-heading .button {
+  flex-shrink: 0;
+}
+.notes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+.notes-conflict {
+  padding: 16px;
+  background: var(--peach);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 16px;
+}
+.notes-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-size: 14px;
+}
+.notes-confirmed svg {
+  width: 18px;
+  height: 18px;
 }
 .resale-card {
   border-top: 8px solid #ffd6c2;
@@ -2129,4 +2174,20 @@ dialog > form {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+}
+
+/* Independent HCAssets lockup replaces the old two-brand header. */
+.site-header .brand {
+  gap: 0;
+}
+.site-header .brand img {
+  width: 196px;
+  height: 40px;
+  object-fit: contain;
+}
+@media (max-width: 760px) {
+  .site-header .brand img {
+    width: 172px;
+    height: 36px;
+  }
 }

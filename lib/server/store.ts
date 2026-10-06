@@ -126,6 +126,15 @@ export class LocalStore {
         }
         action = m.action;
         notes = m.notes;
+      } else if (kind === "edit" && "notes" in data) {
+        a = {
+          ...old!,
+          notes: data.notes,
+          version: old!.version + 1,
+          updatedAt: now,
+        };
+        action = "Notes updated";
+        notes = data.notes;
       } else {
         const value = (kind === "edit" ? editAssetInput : assetInput).parse(
           (data as { asset: unknown }).asset,

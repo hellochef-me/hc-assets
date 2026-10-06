@@ -578,3 +578,84 @@ test("distinct server clients share writer identity checks; formula-looking text
     '=IMPORTXML("https://fictional.invalid","//x")',
   );
 });
+
+test("resale accepts independently verified UAE renewed product prices with configuration limits and excludes other country/unsafe hosts", async () => {
+  let calls = 0;
+  const fetched: string[] = [];
+  const provider = new OpenAiAssetIntelligence(models, async (url, init) => {
+    if (String(url) === "https://api.openai.com/v1/responses") {
+      const body = JSON.parse(String(init?.body));
+      if (++calls === 1) {
+        assert.equal(body.tool_choice, "required");
+        assert.deepEqual(body.tools[0].filters.allowed_domains, ["revibe.me"]);
+        return json({
+          status: "completed",
+          output: [
+            {
+              type: "web_search_call",
+              action: {
+                sources: [
+                  { url: "https://sa.revibe.me/products/dell" },
+                  { url: "https://revibe.me.evil.test/products/dell" },
+                  { url: "https://revibe.me/collections/laptops" },
+                ],
+              },
+            },
+            {
+              type: "message",
+              content: [
+                {
+                  type: "output_text",
+                  text: "Cited verified UAE product",
+                  annotations: [
+                    {
+                      type: "url_citation",
+                      url: "https://www.revibe.me/products/dell-latitude-7400",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      }
+      return json(
+        aiResponse({
+          comparables: [
+            {
+              sourceIndex: 0,
+              title: "Dell",
+              price: 959,
+              currency: "AED",
+              priceQuote: "AED 959",
+              identityQuote: "Dell Latitude 7400",
+              conditionQuote: "Certified Renewed",
+            },
+          ],
+        }),
+      );
+    }
+    fetched.push(String(url));
+    return new Response(
+      "<h1>Dell Latitude 7400</h1><p>Certified Renewed</p><p>AED 959</p>",
+      { headers: { "Content-Type": "text/html" } },
+    );
+  });
+  const result = await provider.resale({
+    brand: "Dell",
+    model: "Latitude 7400",
+    specs: "i7 / 16 GB RAM / 512 GB storage",
+    condition: "Unknown",
+  });
+  assert.deepEqual(fetched, [
+    "https://www.revibe.me/products/dell-latitude-7400",
+  ]);
+  assert.deepEqual(result.rangeAED, { low: 959, high: 959 });
+  assert.equal(result.comparables[0].condition, "Certified Renewed");
+  assert.ok(
+    result.limitations.some((text) =>
+      text.includes("configurations may differ"),
+    ),
+  );
+  assert.ok(result.limitations.some((text) => text.includes("retailer")));
+});

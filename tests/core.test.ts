@@ -546,3 +546,64 @@ test("API validation reports bad inputs as 400 without implying an uncertain wri
   assert.equal(result.success, false);
   if (!result.success) assert.equal(failure(result.error).status, 400);
 });
+
+test("notes-only edits preserve legacy fields, audit once, reject stale writes and support empty notes", () =>
+  local(async (store, directory) => {
+    const snapshot = fixtures();
+    const before = {
+      ...snapshot.assets[1],
+      location: "",
+      serialChecked: false,
+      specsChecked: false,
+      notes: "Existing\nlegacy note",
+    };
+    snapshot.assets[1] = before;
+    await writeFile(
+      path.join(directory, "inventory.json"),
+      JSON.stringify({ ...snapshot, requests: {} }),
+    );
+    const command = {
+      notes: "First line\n" + "x".repeat(1980),
+      expectedVersion: before.version,
+      requestId: randomUUID(),
+    };
+    const after = await store.commit("edit", command, before.id);
+    for (const key of Object.keys(before) as (keyof typeof before)[]) {
+      if (!["notes", "version", "updatedAt"].includes(key))
+        assert.deepEqual(after[key], before[key]);
+    }
+    assert.equal(after.notes, command.notes);
+    assert.equal(after.version, before.version + 1);
+    assert.ok(after.updatedAt);
+    assert.deepEqual(await store.commit("edit", command, before.id), after);
+    assert.equal(
+      (await store.snapshot()).history.length,
+      snapshot.history.length + 1,
+    );
+    assert.equal((await store.snapshot()).history[0].action, "Notes updated");
+    await assert.rejects(
+      store.commit("edit", { ...command, requestId: randomUUID() }, before.id),
+      /changed while/,
+    );
+    await assert.rejects(
+      store.commit(
+        "edit",
+        {
+          ...command,
+          notes: "x".repeat(2001),
+          requestId: randomUUID(),
+          expectedVersion: after.version,
+        },
+        before.id,
+      ),
+      /2,000/,
+    );
+    const empty = await store.commit(
+      "edit",
+      { notes: "", expectedVersion: after.version, requestId: randomUUID() },
+      before.id,
+    );
+    assert.equal(empty.notes, "");
+    assert.equal(empty.location, before.location);
+    assert.deepEqual((await store.snapshot()).people, snapshot.people);
+  }));

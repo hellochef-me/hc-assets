@@ -25,7 +25,7 @@ test("secure launcher refuses unapproved reuse and imports only allowed existing
     );
     await writeFile(
       path.join(app, "node_modules/next/dist/bin/next"),
-      'if(process.env.OPENAI_API_KEY!=="synthetic-override" || process.env.CHECKOUT_SECRET_KEY || process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.BC_OPERATIONS_TOKEN || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!=="synthetic@test.invalid" || process.env.HC_ASSETS_OPENAI_MODEL!=="synthetic-bc-model" || !process.argv.includes("127.0.0.1"))process.exit(2);console.log("SAFE_LAUNCH_VERIFIED");',
+      'if(process.env.OPENAI_API_KEY!=="synthetic-override" || process.env.CHECKOUT_SECRET_KEY || process.env.GOOGLE_SHEETS_SPREADSHEET_ID || process.env.BC_OPERATIONS_TOKEN || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!=="synthetic@test.invalid" || process.env.HC_ASSETS_OPENAI_MODEL!=="synthetic-bc-model" || process.env.HC_ASSETS_SEARCH_MODEL!=="synthetic-bc-model" || !process.argv.includes("127.0.0.1"))process.exit(2);console.log("SAFE_LAUNCH_VERIFIED");',
     );
     const env = {
       NODE_ENV: "test" as const,
@@ -46,6 +46,7 @@ test("secure launcher refuses unapproved reuse and imports only allowed existing
         HC_ASSETS_REUSE_BC_CREDENTIALS: "approved",
         HC_ASSETS_REUSE_BC_GOOGLE: "approved",
         HC_ASSETS_USE_BC_MODEL: "approved",
+        HC_ASSETS_RESALE_ENABLED: "approved",
       },
       encoding: "utf8",
     });

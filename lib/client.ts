@@ -3,6 +3,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public assetId?: string,
+    public status?: number,
   ) {
     super(message);
   }
@@ -31,7 +32,11 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
     );
   }
   if (!r.ok || data?.error)
-    throw new ApiError(data?.error || "The request failed.", data?.assetId);
+    throw new ApiError(
+      data?.error || "The request failed.",
+      data?.assetId,
+      r.status,
+    );
   return data;
 }
 export const fetchSnapshot = () => request<Snapshot>("/api/inventory");

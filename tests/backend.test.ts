@@ -130,7 +130,7 @@ test("approved OCR works independently of Sheet writes and resale configuration;
     assert.equal(source.resaleEnabled, false);
     assert.equal(source.readOnly, true);
     await intelligence("ocr"); // Constructs a provider, makes no paid call.
-    await assert.rejects(intelligence("resale"), /not connected/);
+    await assert.rejects(intelligence("resale"), /Resale research is disabled/);
     await assert.rejects(assertWritable(), /read only/);
     process.env.HC_ASSETS_BACKEND = "live";
     assert.equal((await previewSource()).readOnly, true);

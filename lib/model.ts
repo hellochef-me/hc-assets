@@ -155,13 +155,39 @@ export const movementInput = z
       });
     }
   });
-export const editInput = z
+export const notesText = z
+  .string()
+  .trim()
+  .max(2000, "Keep notes within 2,000 characters.");
+export const notesInput = z
   .object({
-    asset: editAssetInput,
+    notes: notesText,
     expectedVersion: z.number().int().positive(),
     requestId: z.string().uuid(),
   })
   .strict();
+export const editInput = z.union(
+  [
+    z
+      .object({
+        asset: editAssetInput,
+        expectedVersion: z.number().int().positive(),
+        requestId: z.string().uuid(),
+      })
+      .strict(),
+    notesInput,
+  ],
+  {
+    error: (issue) => {
+      if (issue.code !== "invalid_union") return undefined;
+      const notesOnly =
+        typeof issue.input === "object" &&
+        issue.input !== null &&
+        Object.hasOwn(issue.input, "notes");
+      return issue.errors[notesOnly ? 1 : 0][0]?.message || "Invalid changes.";
+    },
+  },
+);
 export const createInput = z
   .object({ asset: assetInput, requestId: z.string().uuid() })
   .strict();

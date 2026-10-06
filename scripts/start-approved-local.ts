@@ -35,8 +35,11 @@ async function start() {
         );
     }
   }
-  if (process.env.HC_ASSETS_USE_BC_MODEL === "approved")
+  if (process.env.HC_ASSETS_USE_BC_MODEL === "approved") {
     inherited.HC_ASSETS_OPENAI_MODEL = bcModel;
+    if (process.env.HC_ASSETS_RESALE_ENABLED === "approved")
+      inherited.HC_ASSETS_SEARCH_MODEL = bcModel;
+  }
   if (names.some((name) => !inherited[name]))
     throw new Error(
       "An approved existing credential is missing. No server was started.",
