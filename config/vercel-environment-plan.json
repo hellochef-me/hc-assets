@@ -1,5 +1,5 @@
 {
-  "status": "protected-project-prepared-no-deployments",
+  "status": "production-secrets-bound-protected-project-not-deployed",
   "projectName": "hc-assets",
   "framework": "nextjs",
   "nodeVersion": "22.x",
@@ -30,15 +30,25 @@
       "HC_ASSETS_AI_MINUTE_REQUEST_LIMIT": "4"
     },
     "requiredSecretNames": [
-      "OPENAI_API_KEY",
-      "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
       "HC_ASSETS_GATEWAY_SECRET"
     ],
     "requiredUnconfiguredNames": [
       "HC_ASSETS_GATEWAY_URL"
     ],
-    "status": "future target only; current Production remains demo with disabled capabilities and no secrets"
+    "status": "future target only; current Production remains demo with disabled capabilities and no secrets",
+    "boundSensitiveNames": [
+      "OPENAI_API_KEY",
+      "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"
+    ],
+    "pendingSecretNames": [
+      "HC_ASSETS_GATEWAY_SECRET"
+    ],
+    "boundNonSecret": {
+      "HC_ASSETS_SPREADSHEET_ID": "1ZeV0krMc_ZeH2e-iOd9ft5jMvGwNcCtu4SPYYXI0x_A",
+      "HC_ASSETS_AI_DAILY_REQUEST_LIMIT": "20",
+      "HC_ASSETS_AI_MINUTE_REQUEST_LIMIT": "4"
+    }
   },
   "projectId": "prj_feW5kRII4jHYG3uCrI3UfAudygcd",
   "teamSlug": "butcher-s-counter",
@@ -50,5 +60,6 @@
     "HC_ASSETS_AI_ENABLED": "disabled",
     "HC_ASSETS_OPENAI_MODEL": "gpt-5.6-terra",
     "HC_ASSETS_SEARCH_MODEL": "gpt-5.6-terra"
-  }
+  },
+  "verifiedDomain": "assets.hellochef.me"
 }

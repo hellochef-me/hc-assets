@@ -27,11 +27,20 @@ import { MoveDialog } from "./move-dialog";
 import { AssetNotes } from "./asset-notes";
 import { useSource } from "./source-context";
 import type { ResaleEvidence } from "@/lib/server/integrations";
+import { resaleScenarios } from "@/lib/resale";
 export function Detail({ id }: { id: string }) {
   const { source, canWrite } = useSource();
-  const [evidence, setEvidence] = useState<ResaleEvidence | null>(null);
+  const [researchEvidence, setEvidence] = useState<ResaleEvidence | null>(null);
+  const [evidenceIdentity, setEvidenceIdentity] = useState("");
   const { snapshot, error, loading, reload, setSnapshot } = useInventory();
   const asset = snapshot?.assets.find((a) => a.id === id);
+  const identityKey = JSON.stringify([
+    id,
+    asset?.brand,
+    asset?.model,
+    asset?.specs,
+  ]);
+  const evidence = evidenceIdentity === identityKey ? researchEvidence : null;
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<AssetInput | null>(null),
     [move, setMove] = useState(false),
@@ -91,8 +100,10 @@ export function Detail({ id }: { id: string }) {
     }
   }
   async function research() {
+    if (researching) return;
     setResearching(true);
     setResaleError("");
+    setEvidenceIdentity(identityKey);
     try {
       setEvidence(
         await request<ResaleEvidence>("/api/resale", {
@@ -237,31 +248,77 @@ export function Detail({ id }: { id: string }) {
         </div>
         <aside className="card resale-card">
           <p className="eyebrow">SEPARATE FROM PURCHASE COST</p>
-          <h2>Estimated resale value</h2>
+          <h2>Indicative resale value</h2>
           <div className="resale-value">
             {evidence?.rangeAED
               ? `AED ${evidence.rangeAED.low.toLocaleString("en-GB")}–${evidence.rangeAED.high.toLocaleString("en-GB")}`
-              : evidence
-                ? "No verified comparable"
-                : "Not researched"}
+              : evidence?.indicative
+                ? `AED ${evidence.indicative.goodWorkingAED.low.toLocaleString("en-GB")}–${evidence.indicative.goodWorkingAED.high.toLocaleString("en-GB")}`
+                : evidence
+                  ? "No verified comparable"
+                  : "Not researched"}
           </div>
           <p className="muted-text">
-            A current estimate needs comparable used listings, verified
-            condition and a review date.
+            {evidence?.indicative
+              ? "Low-confidence model estimate for good working condition. No matching current listing price was verified."
+              : "Listing asking range above; indicative condition scenarios below. Actual battery health and function still need inspection."}
           </p>
+          {evidence && resaleScenarios(evidence).length > 0 && (
+            <section
+              className="resale-scenarios"
+              aria-label="Indicative condition scenarios"
+            >
+              <h3>Best-guess condition scenarios</h3>
+              <p className="muted-text">
+                {evidence.indicative
+                  ? "Based on a model estimate, not current verified comparables."
+                  : "Planning estimates adjusted from the sourced asking range, not additional listing prices."}
+              </p>
+              {resaleScenarios(evidence).map((scenario) => (
+                <div className="resale-scenario" key={scenario.label}>
+                  <h4>{scenario.label}</h4>
+                  <strong>
+                    AED {scenario.low.toLocaleString("en-GB")}–
+                    {scenario.high.toLocaleString("en-GB")}
+                  </strong>
+                  <p>{scenario.assumptions}</p>
+                </div>
+              ))}
+              <small>
+                {evidence.indicative
+                  ? "Fair: roughly 50–75% of the good-condition estimate; faulty/parts: 10–30%."
+                  : "Rough planning factors against listings: good 80–100%, fair 50–75%, faulty/parts 10–30%."}{" "}
+                These adjustments are assumptions, not a valuation or proof of
+                this asset’s condition.
+              </small>
+              {evidence.indicative && (
+                <>
+                  <p>{evidence.indicative.reasoning}</p>
+                  {evidence.indicative.assumptions.map((assumption, i) => (
+                    <small key={i}>{assumption}</small>
+                  ))}
+                  <small>
+                    Estimated {date(evidence.indicative.estimatedAt)} · Low
+                    confidence
+                  </small>
+                </>
+              )}
+            </section>
+          )}
           {!evidence && (
             <div className="resale-empty">
               <RefreshCw />
               <h3>No market sources yet</h3>
               <p>
                 {(source?.resaleEnabled ?? source?.aiEnabled)
-                  ? "Run research to check current UAE asking prices and their sources."
+                  ? "Research this asset’s brand/model for UAE asking prices and indicative condition scenarios."
                   : "Resale research is currently disabled. Photo OCR is configured separately."}
               </p>
             </div>
           )}
           {evidence && (
             <div className="market-evidence">
+              <h3>Verified listing evidence</h3>
               <p>
                 Checked{" "}
                 {evidence.asOf ? date(evidence.asOf) : "No usable dated source"}
@@ -298,9 +355,10 @@ export function Detail({ id }: { id: string }) {
           </Button>
           {resaleError && <Notice warning>{resaleError}</Notice>}
           <small>
-            Research accepts verifiable used UAE listings in AED, with source
-            links, checked dates and a price range. Unsupported currencies are
-            excluded.
+            Brand and model are checked against source listings. The serial
+            checks existing inventory identity; it does not prove
+            specifications, battery health or function. Indicative estimates are
+            separate from purchase cost and verified listing prices.
           </small>
         </aside>
       </div>

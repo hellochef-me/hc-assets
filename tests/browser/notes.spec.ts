@@ -312,3 +312,84 @@ test("enabled resale researches on demand, shows sourced AED evidence and keeps 
   await expect(page.locator(".market-evidence")).toContainText("06 Oct 2026");
   await expect(page.locator(".purchase-line")).not.toContainText("1,250");
 });
+
+for (const width of [390, 1280])
+  test(`indicative model estimates stay separate from verified quotes and actual condition at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const snapshot = await setup(page);
+    snapshot.source = {
+      ...source,
+      ocrEnabled: true,
+      resaleEnabled: true,
+      aiEnabled: true,
+    };
+    await page.route("**/api/source", (route) =>
+      route.fulfill({ json: snapshot.source }),
+    );
+    let calls = 0;
+    await page.route("**/api/resale", (route) => {
+      calls++;
+      expect(route.request().postDataJSON()).toEqual({ assetId: "DEMO-002" });
+      return route.fulfill({
+        json: {
+          comparables: [],
+          rangeAED: null,
+          asOf: null,
+          limitations: ["No readable current AED listing evidence was found."],
+          indicative: {
+            goodWorkingAED: { low: 600, high: 900 },
+            estimatedAt: "2026-10-06T00:00:00Z",
+            basis: "model-estimate",
+            reasoning:
+              "Fictional model estimate; exact RAM and storage are unknown.",
+            assumptions: [
+              "Assumes working equipment; condition is not verified.",
+            ],
+          },
+        },
+      });
+    });
+    await page.goto("/assets/DEMO-002");
+    expect(calls).toBe(0);
+    await page.getByRole("button", { name: "Research resale value" }).click();
+    await expect(page.locator(".resale-value")).toHaveText("AED 600–900");
+    const scenarios = page.getByRole("region", {
+      name: "Indicative condition scenarios",
+    });
+    await expect(scenarios).toContainText("Low confidence");
+    await expect(
+      scenarios.getByRole("heading", { name: "Good · fully working" }),
+    ).toBeVisible();
+    await expect(
+      scenarios.getByRole("heading", { name: "Fair · working with wear" }),
+    ).toBeVisible();
+    await expect(
+      scenarios.getByRole("heading", { name: "Faulty · parts only" }),
+    ).toBeVisible();
+    await expect(scenarios).toContainText("AED 300–675");
+    await expect(scenarios).toContainText("AED 60–275");
+    await expect(
+      page.locator(".market-evidence").getByRole("link"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("Battery health and working condition: Unknown"),
+    ).toBeVisible();
+    await expect(page.locator(".purchase-line")).not.toContainText("600");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await page
+      .locator(".resale-card")
+      .screenshot({ path: `docs/screenshots/resale-scenarios-${width}.png` });
+  });

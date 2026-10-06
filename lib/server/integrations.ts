@@ -21,6 +21,13 @@ export interface ResaleEvidence {
   rangeAED: { low: number; high: number } | null;
   asOf: string | null;
   limitations: string[];
+  indicative?: {
+    goodWorkingAED: { low: number; high: number };
+    estimatedAt: string;
+    basis: "model-estimate";
+    reasoning: string;
+    assumptions: string[];
+  };
 }
 export interface AssetIntelligence {
   extract(photos: string[]): Promise<PhotoExtraction>;

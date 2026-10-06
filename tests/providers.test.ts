@@ -171,7 +171,7 @@ test("resale requires independently fetched AED model/used/price quotes; source 
   );
   assert.equal(aiCalls, 2);
 });
-test("unreadable listing and fabricated price remain Unknown, never fall back to estimates", async () => {
+test("unreadable listing and fabricated quote never become verified evidence; malformed best guesses stay unknown", async () => {
   for (const blocked of [true, false]) {
     let count = 0;
     const p = new OpenAiAssetIntelligence(models, async (url) => {
@@ -658,4 +658,77 @@ test("resale accepts independently verified UAE renewed product prices with conf
     ),
   );
   assert.ok(result.limitations.some((text) => text.includes("retailer")));
+});
+
+test("missing current sources can produce a clearly separate low-confidence model estimate without fabricating comparables", async () => {
+  let calls = 0;
+  const provider = new OpenAiAssetIntelligence(
+    models,
+    async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      if (++calls === 1)
+        return json(aiResponse("No matching readable listings"));
+      assert.equal(body.text.format.name, "indicative_resale");
+      assert.equal(body.model, models.searchModel);
+      assert.match(body.instructions, /LOW CONFIDENCE MODEL ESTIMATE/);
+      assert.match(body.instructions, /Return no URLs or comparables/);
+      assert.deepEqual(JSON.parse(body.input), {
+        brand: "Dell",
+        model: "Latitude 5440",
+        specs: "Unknown",
+        condition: "Unknown",
+      });
+      return json(
+        aiResponse({
+          goodWorkingAED: { low: 600, high: 900 },
+          reasoning:
+            "Broad model-family planning estimate; RAM and storage are unknown.",
+          assumptions: [
+            "Assumes fully working equipment; condition is not verified.",
+          ],
+        }),
+      );
+    },
+    () => new Date("2026-10-06T00:00:00Z"),
+  );
+  const result = await provider.resale({
+    brand: "Dell",
+    model: "Latitude 5440",
+    specs: "Unknown",
+    condition: "Unknown",
+  });
+  assert.equal(calls, 2);
+  assert.deepEqual(result.comparables, []);
+  assert.equal(result.rangeAED, null);
+  assert.equal(result.asOf, null);
+  assert.deepEqual(result.indicative?.goodWorkingAED, { low: 600, high: 900 });
+  assert.equal(result.indicative?.basis, "model-estimate");
+  assert.equal(result.indicative?.estimatedAt, "2026-10-06T00:00:00.000Z");
+});
+test("unfamiliar identity, reversed estimate and provider failure keep prices unknown rather than inventing an anchor", async () => {
+  for (const answer of [null, { low: 900, high: 600 }, "failure"]) {
+    let calls = 0;
+    const provider = new OpenAiAssetIntelligence(models, async () => {
+      if (++calls === 1) return json(aiResponse("No sources"));
+      if (answer === "failure")
+        return json({ error: { message: "Rate limited" } }, 429);
+      return json(
+        aiResponse({
+          goodWorkingAED: answer,
+          reasoning: "Identity uncertain",
+          assumptions: [],
+        }),
+      );
+    });
+    const result = await provider.resale({
+      brand: "Unknown",
+      model: "Unknown",
+      specs: "",
+      condition: "Unknown",
+    });
+    assert.equal(result.indicative, undefined);
+    assert.equal(result.rangeAED, null);
+    assert.deepEqual(result.comparables, []);
+    assert.equal(calls, 2);
+  }
 });
