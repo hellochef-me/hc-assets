@@ -11,7 +11,14 @@ import {
   RefreshCw,
   Check,
 } from "lucide-react";
-import { AssetInput, assetInput, display, inputOf } from "@/lib/model";
+import {
+  AssetInput,
+  editAssetInput,
+  display,
+  inputOf,
+  hasValidStorageLocation,
+  locationLabel,
+} from "@/lib/model";
 import { ApiError, request } from "@/lib/client";
 import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Timeline, Dialog, date } from "./ui";
@@ -44,7 +51,18 @@ export function Detail({ id }: { id: string }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!asset || !draft) return;
-    const parsed = assetInput.safeParse(draft);
+    if (
+      !hasValidStorageLocation({
+        location: draft.location,
+        assignee: asset.assignee,
+      })
+    ) {
+      setSaveError(
+        "Choose Engineering Area or Locker when the asset is unassigned.",
+      );
+      return;
+    }
+    const parsed = editAssetInput.safeParse(draft);
     if (!parsed.success) {
       setSaveError(parsed.error.issues[0].message);
       return;
@@ -124,7 +142,9 @@ export function Detail({ id }: { id: string }) {
       {confirmed && canWrite && (
         <div className="confirmed-banner" role="status">
           <Check />
-          Saved in the local demo inventory
+          {source?.kind === "demo"
+            ? "Saved in the local demo inventory"
+            : "Saved to Google Sheets"}
         </div>
       )}
       <div className="page-heading">
@@ -189,7 +209,7 @@ export function Detail({ id }: { id: string }) {
               <div>
                 <MapPin />
                 <span>
-                  Location<strong>{asset.location || "Unknown"}</strong>
+                  Location<strong>{locationLabel(asset)}</strong>
                 </span>
               </div>
             </div>
@@ -296,7 +316,11 @@ export function Detail({ id }: { id: string }) {
       >
         {draft && (
           <form onSubmit={save}>
-            <AssetFields asset={draft} setAsset={setDraft} />
+            <AssetFields
+              asset={draft}
+              setAsset={setDraft}
+              assigned={Boolean(asset.assignee.trim())}
+            />
             {saveError && (
               <Notice warning>
                 {saveError}

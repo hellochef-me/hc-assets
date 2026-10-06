@@ -1,5 +1,6 @@
 import "server-only";
 import { Asset, Movement, Person, blankAsset } from "../model";
+import { ProviderError } from "./provider-http";
 export const inventoryHeaders = [
   "id",
   "category",
@@ -152,8 +153,7 @@ export function decodeEmployees(values: unknown[][]): Person[] {
       department: String(r[1] ?? ""),
     }));
 }
-// Explicit dependency injection: this adapter is NEVER selected by the preview.
-// No credentials, OAuth, header mutations, writes or tab creation are implemented.
+// Read-only server adapter. Token issuance is injected; no writes or schema changes.
 export class ReadOnlySheetAdapter {
   constructor(
     private spreadsheetId: string,
@@ -173,13 +173,16 @@ export class ReadOnlySheetAdapter {
       },
     );
     if (!response.ok)
-      throw new Error(`Sheet read failed (${response.status}).`);
+      throw new ProviderError(
+        "unavailable",
+        `Sheet read failed (${response.status}).`,
+      );
     const data = await response.json();
     if (
       !Array.isArray(data.values) ||
       !data.values.every((r: unknown) => Array.isArray(r))
     )
-      throw new Error("Unexpected Sheet response.");
+      throw new ProviderError("invalid_response", "Unexpected Sheet response.");
     return data.values;
   }
 }

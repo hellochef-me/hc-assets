@@ -21,9 +21,11 @@ async function start() {
       : []),
   ];
   const inherited = { ...process.env };
+  let bcModel = "gpt-5.6-terra";
   for (const file of [".env", ".env.local"]) {
     try {
       const values = parseEnv(await readFile(path.join(root, file), "utf8"));
+      if (values.OPENAI_MODEL) bcModel = values.OPENAI_MODEL;
       for (const name of names)
         if (values[name]) inherited[name] = values[name];
     } catch (error) {
@@ -33,6 +35,8 @@ async function start() {
         );
     }
   }
+  if (process.env.HC_ASSETS_USE_BC_MODEL === "approved")
+    inherited.HC_ASSETS_OPENAI_MODEL = bcModel;
   if (names.some((name) => !inherited[name]))
     throw new Error(
       "An approved existing credential is missing. No server was started.",

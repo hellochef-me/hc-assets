@@ -7,6 +7,8 @@ import { randomUUID, createHash } from "node:crypto";
 import { DirectSheetWriter } from "../lib/server/direct-sheet-writer";
 import { decodeControlledSnapshot } from "../lib/server/sheet-snapshot";
 import { blankAsset } from "../lib/model";
+import { storedAsset } from "../lib/server/sheet-gateway";
+import { fixtures } from "../lib/fixtures";
 import { writerMock } from "./helpers/writer";
 async function setup() {
   const mock = await writerMock();
@@ -29,7 +31,7 @@ const input = () => ({
   asset: {
     ...blankAsset(),
     name: "Fictional reviewed asset",
-    location: "Test storage",
+    location: "Engineering Area",
     serial: "TEST-1",
     serialChecked: true,
   },
@@ -68,21 +70,19 @@ test("BC-style direct writer confirms atomic Sheet state/history, replays lost r
         ),
       /changed/,
     );
-    const moved = await w
-      .client()
-      .commit(
-        "move",
-        {
-          requestId: randomUUID(),
-          expectedVersion: 1,
-          action: "Assign",
-          assignee: "Fixture Person",
-          location: "Test desk",
-          notes: "Verified fake movement",
-        },
-        "Local test operator",
-        asset.id,
-      );
+    const moved = await w.client().commit(
+      "move",
+      {
+        requestId: randomUUID(),
+        expectedVersion: 1,
+        action: "Assign",
+        assignee: "Fixture Person",
+        location: "Locker",
+        notes: "Verified fake movement",
+      },
+      "Local test operator",
+      asset.id,
+    );
     const saved = decodeControlledSnapshot(w.mock.tables.slice(0, 5));
     assert.equal(moved.version, 2);
     assert.equal(saved.assets[0].id, asset.id);
@@ -138,3 +138,114 @@ test("direct writer refuses missing schema and an existing process lock before d
     await w.clean();
   }
 });
+
+test("direct writer refuses unsupported locations before transport and preserves stored legacy locations", async () => {
+  const writer = await setup();
+  try {
+    await assert.rejects(
+      writer
+        .client()
+        .commit(
+          "create",
+          { ...input(), asset: { ...input().asset, location: "Elsewhere" } },
+          "Local test operator",
+        ),
+      /Choose Engineering Area or Locker/,
+    );
+    await assert.rejects(
+      writer.client().commit(
+        "move",
+        {
+          requestId: randomUUID(),
+          expectedVersion: 1,
+          action: "Assign",
+          assignee: "Fixture Person",
+          location: "Elsewhere",
+          notes: "",
+        },
+        "Local test operator",
+        "legacy-id",
+      ),
+      /Choose Engineering Area or Locker/,
+    );
+    assert.equal(writer.mock.calls(), 0);
+    assert.equal(writer.mock.tables[0].length, 1);
+    assert.equal(writer.mock.tables[1].length, 1);
+    assert.equal(writer.mock.tables[5].length, 1);
+    const legacy = { ...fixtures().assets[0], location: "Legacy office" };
+    assert.equal(storedAsset.parse(legacy).location, "Legacy office");
+  } finally {
+    await writer.clean();
+  }
+});
+
+for (const transport of ["direct", "gateway"] as const)
+  test(`${transport} Sheet writer permits blank assigned locations and requires storage on return`, async () => {
+    const writer = await setup();
+    try {
+      const client =
+        transport === "direct" ? writer.client() : writer.mock.client();
+      let asset = await client.commit("create", input(), "Local test operator");
+      const move = (action: string, assignee: string, location: string) => ({
+        requestId: randomUUID(),
+        expectedVersion: asset.version,
+        action,
+        assignee,
+        location,
+        notes: "Optional storage",
+      });
+      asset = await client.commit(
+        "move",
+        move("Assign", "Fixture Person", ""),
+        "Local test operator",
+        asset.id,
+      );
+      assert.equal(asset.location, "");
+      asset = await client.commit(
+        "edit",
+        {
+          requestId: randomUUID(),
+          expectedVersion: asset.version,
+          asset: { ...input().asset, location: "" },
+        },
+        "Local test operator",
+        asset.id,
+      );
+      assert.equal(asset.assignee, "Fixture Person");
+      await assert.rejects(
+        client.commit(
+          "move",
+          move("Return", "", ""),
+          "Local test operator",
+          asset.id,
+        ),
+        /Choose Engineering Area or Locker/,
+      );
+      asset = await client.commit(
+        "move",
+        move("Return", "", "Locker"),
+        "Local test operator",
+        asset.id,
+      );
+      assert.equal(asset.assignee, "");
+      await assert.rejects(
+        client.commit(
+          "edit",
+          {
+            requestId: randomUUID(),
+            expectedVersion: asset.version,
+            asset: { ...input().asset, location: "" },
+          },
+          "Local test operator",
+          asset.id,
+        ),
+        /Invalid asset/,
+      );
+      const snapshot = decodeControlledSnapshot(writer.mock.tables.slice(0, 5));
+      assert.equal(snapshot.assets[0].location, "Locker");
+      assert.equal(snapshot.history.length, 4);
+      assert.equal(writer.mock.calls(), 4);
+    } finally {
+      await writer.clean();
+    }
+  });

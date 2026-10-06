@@ -14,6 +14,7 @@ import { ProviderError, providerJson } from "./provider-http";
 export const storedAsset = z
   .object({
     ...assetInput.shape,
+    location: z.string().max(400),
     purchaseCost: z.string().max(400),
     id: z.string().min(1).max(400),
     version: z.number().int().positive(),

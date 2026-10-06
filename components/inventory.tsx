@@ -13,7 +13,13 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
 } from "lucide-react";
-import { Asset, statuses, categories } from "@/lib/model";
+import {
+  Asset,
+  statuses,
+  categories,
+  locations,
+  locationLabel,
+} from "@/lib/model";
 import { useInventory } from "./use-inventory";
 import { Button, Badge, Device, Notice, Empty, date } from "./ui";
 import { MoveDialog } from "./move-dialog";
@@ -148,12 +154,8 @@ export function Inventory() {
                 onChange={(e) => setLocation(e.target.value)}
               >
                 <option value="">All locations</option>
-                {Array.from(
-                  new Set(
-                    snapshot?.assets.map((a) => a.location).filter(Boolean),
-                  ),
-                ).map((l) => (
-                  <option key={l}>{l}</option>
+                {locations.map((location) => (
+                  <option key={location}>{location}</option>
                 ))}
               </Select>
             </label>
@@ -285,7 +287,7 @@ export function Inventory() {
                         <td>
                           <span className="location-cell">
                             <MapPin />
-                            {a.location || "Unknown"}
+                            {locationLabel(a)}
                           </span>
                         </td>
                         <td>

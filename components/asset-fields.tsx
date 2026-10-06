@@ -1,14 +1,21 @@
 "use client";
 import { Select } from "./select";
-import { AssetInput, categories, conditions } from "@/lib/model";
+import {
+  AssetInput,
+  categories,
+  conditions,
+  locations,
+  isStorageLocation,
+} from "@/lib/model";
 import { Field, Notice } from "./ui";
-import { locations } from "@/lib/fixtures";
 export function AssetFields({
   asset,
   setAsset,
   nameRequired = true,
+  assigned = false,
 }: {
   nameRequired?: boolean;
+  assigned?: boolean;
   asset: AssetInput;
   setAsset: (a: AssetInput) => void;
 }) {
@@ -143,19 +150,34 @@ export function AssetFields({
           </Field>
         </div>
       </details>
-      <Field label="Location">
-        <input
-          list="locations"
-          value={asset.location}
+      <Field
+        label="Location"
+        hint={
+          assigned
+            ? "Storage location is optional while assigned to someone."
+            : "Unassigned equipment must be stored in Engineering Area or Locker."
+        }
+      >
+        <Select
+          value={isStorageLocation(asset.location) ? asset.location : ""}
           onChange={(e) => change("location", e.target.value)}
-          required
-          placeholder="Choose or type a location"
-        />
-        <datalist id="locations">
-          {locations.map((l) => (
-            <option key={l} value={l} />
+          required={!assigned}
+        >
+          <option value="">
+            {assigned
+              ? "No storage location — with assignee"
+              : "Choose a storage location"}
+          </option>
+          {locations.map((location) => (
+            <option key={location}>{location}</option>
           ))}
-        </datalist>
+        </Select>
+        {!isStorageLocation(asset.location) && asset.location && (
+          <small className="muted-text">
+            Previously recorded: {asset.location}. Confirm a storage location
+            before saving.
+          </small>
+        )}
       </Field>
       <details className="disclosure">
         <summary>Purchase details & notes (optional)</summary>

@@ -1,4 +1,5 @@
 import "server-only";
+import { ZodError } from "zod";
 import { StoreError } from "./store";
 import { ProviderError } from "./provider-http";
 import { SheetGatewayError } from "./sheet-gateway";
@@ -60,6 +61,8 @@ export async function body(request: Request) {
   }
 }
 export function failure(e: unknown) {
+  if (e instanceof ZodError)
+    return json({ error: e.issues[0]?.message || "Invalid request." }, 400);
   if (e instanceof StoreError)
     return json({ error: e.message, assetId: e.assetId }, e.status);
   if (e instanceof ProviderError)

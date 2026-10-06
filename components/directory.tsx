@@ -5,6 +5,7 @@ import { User, MapPin, Search } from "lucide-react";
 import { useInventory } from "./use-inventory";
 import { Button, Empty, Notice, Timeline, Badge } from "./ui";
 import { useSource } from "./source-context";
+import { locations, hasValidStorageLocation } from "@/lib/model";
 export function Directory({
   kind,
 }: {
@@ -18,12 +19,10 @@ export function Directory({
   const groups =
     kind === "people"
       ? snapshot?.people.map((p) => ({ name: p.name, secondary: p.department }))
-      : Array.from(new Set(snapshot?.assets.map((a) => a.location) || [])).map(
-          (name) => ({
-            name: name || "Unknown",
-            secondary: "Workspace location",
-          }),
-        );
+      : locations.map((name) => ({ name, secondary: "Storage location" }));
+  const unconfirmedLocations =
+    snapshot?.assets.filter((asset) => !hasValidStorageLocation(asset))
+      .length || 0;
   const filtered = groups?.filter((g) =>
     g.name.toLowerCase().includes(query.toLowerCase()),
   );
@@ -38,9 +37,11 @@ export function Directory({
               ? source?.kind === "demo"
                 ? "Every demo movement, with the person and time recorded."
                 : "Sheet history; fields never recorded remain Unknown."
-              : source?.kind === "demo"
-                ? "Fictional preview directory"
-                : `${source?.label || "Sheet directory"} · ${snapshot?.people.length ?? "…"} employee rows${source?.readOnly ? " · Read only" : ""}`}
+              : kind === "locations"
+                ? "Unassigned equipment is stored in Engineering Area or Locker."
+                : source?.kind === "demo"
+                  ? "Fictional preview directory"
+                  : `${source?.label || "Sheet directory"} · ${snapshot?.people.length ?? "…"} employee rows${source?.readOnly ? " · Read only" : ""}`}
           </p>
         </div>
       </div>
@@ -85,6 +86,15 @@ export function Directory({
         </section>
       ) : (
         <>
+          {kind === "locations" && unconfirmedLocations > 0 && (
+            <Notice warning>
+              {unconfirmedLocations} existing{" "}
+              {unconfirmedLocations === 1 ? "asset has" : "assets have"} a
+              missing or different recorded location. Review these in{" "}
+              <Link href="/">Inventory</Link> before confirming storage.
+              Existing records have not been changed.
+            </Notice>
+          )}
           <label className="search-bar directory-search">
             <Search />
             <input

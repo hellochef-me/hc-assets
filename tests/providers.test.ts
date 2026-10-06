@@ -341,7 +341,7 @@ test("Sheet expected revisions, full movements and out-of-band fingerprints fail
       expectedVersion: 1,
       action: "Assign",
       assignee: "Fixture Person",
-      location: "Demo office",
+      location: "Locker",
       notes: "Complete audit",
     },
     "Fixture Actor",
@@ -352,7 +352,7 @@ test("Sheet expected revisions, full movements and out-of-band fingerprints fail
   assert.equal(event.actor, "Fixture Actor");
   assert.equal(event.from.assignee, "");
   assert.equal(event.to.assignee, "Fixture Person");
-  assert.equal(event.to.location, "Demo office");
+  assert.equal(event.to.location, "Locker");
   await assert.rejects(
     w
       .client()
@@ -373,7 +373,7 @@ test("Sheet expected revisions, full movements and out-of-band fingerprints fail
         expectedVersion: 2,
         action: "Return",
         assignee: "",
-        location: "IT storage",
+        location: "Engineering Area",
         notes: "",
       },
       "Fixture Actor",

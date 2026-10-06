@@ -12,6 +12,7 @@ import {
   serialIdentity,
   inputOf,
   movementState,
+  movementInput,
 } from "../lib/model";
 import { fixtures } from "../lib/fixtures";
 import {
@@ -170,10 +171,10 @@ test("transfer, return, repair, retire record full state and forbid later moveme
   local(async (s) => {
     let a = fixtures().assets[0];
     for (const [action, assignee, location, status] of [
-      ["Transfer", "Maya Chen", "Studio 1", "Assigned"],
-      ["Return", "", "IT storage", "Available"],
-      ["Repair", "", "Workshop", "Repair"],
-      ["Retire", "", "IT storage", "Retired"],
+      ["Transfer", "Maya Chen", "Engineering Area", "Assigned"],
+      ["Return", "", "Engineering Area", "Available"],
+      ["Repair", "", "Engineering Area", "Repair"],
+      ["Retire", "", "Engineering Area", "Retired"],
     ]) {
       a = await s.commit(
         "move",
@@ -201,7 +202,7 @@ test("transfer, return, repair, retire record full state and forbid later moveme
         {
           action: "Assign",
           assignee: "Nora Ellis",
-          location: "Studio 2",
+          location: "Locker",
           notes: "",
           expectedVersion: a.version,
           requestId: randomUUID(),
@@ -220,7 +221,7 @@ test("bad movement is rejected with no partial timeline", () =>
         {
           action: "Assign",
           assignee: "Not a person",
-          location: "Studio 1",
+          location: "Engineering Area",
           notes: "",
           expectedVersion: 1,
           requestId: randomUUID(),
@@ -234,7 +235,7 @@ test("bad movement is rejected with no partial timeline", () =>
       movementState(a, {
         action: "Assign",
         assignee: "Nora Ellis",
-        location: "Studio 1",
+        location: "Engineering Area",
         notes: "",
         expectedVersion: 1,
         requestId: randomUUID(),
@@ -403,4 +404,145 @@ test("Next internal loopback URL uses verified incoming Host for origin checking
       ),
     /private local/,
   );
+});
+
+test("create, edit and movement commands reject other storage locations without changing records", () =>
+  local(async (store) => {
+    const before = await store.snapshot();
+    const asset = before.assets[1];
+    for (const location of [
+      "",
+      "Unknown",
+      "Workshop",
+      "IT storage",
+      "engineering area",
+      "Locker ",
+    ]) {
+      assert.equal(
+        assetInput.safeParse({ ...intake(), location }).success,
+        false,
+      );
+      assert.equal(
+        movementInput.safeParse({
+          action: "Assign",
+          assignee: "Nora Ellis",
+          location,
+          notes: "",
+          expectedVersion: 1,
+          requestId: randomUUID(),
+        }).success,
+        location === "",
+      );
+    }
+    await assert.rejects(
+      store.commit("create", {
+        asset: { ...intake(), location: "Elsewhere" },
+        requestId: randomUUID(),
+      }),
+      /Choose Engineering Area or Locker/,
+    );
+    await assert.rejects(
+      store.commit(
+        "edit",
+        {
+          asset: { ...inputOf(asset), location: "Elsewhere" },
+          expectedVersion: 1,
+          requestId: randomUUID(),
+        },
+        asset.id,
+      ),
+      /Choose Engineering Area or Locker/,
+    );
+    await assert.rejects(
+      store.commit(
+        "move",
+        {
+          action: "Assign",
+          assignee: "Nora Ellis",
+          location: "Elsewhere",
+          notes: "",
+          expectedVersion: 1,
+          requestId: randomUUID(),
+        },
+        asset.id,
+      ),
+      /Choose Engineering Area or Locker/,
+    );
+    assert.deepEqual(await store.snapshot(), before);
+    for (const location of ["Engineering Area", "Locker"]) {
+      assert.equal(
+        assetInput.safeParse({ ...intake(), location }).success,
+        true,
+      );
+    }
+  }));
+
+test("location is optional only while assigned; edits use current server assignment and unassigning requires storage", () =>
+  local(async (store) => {
+    let asset = await store.commit("create", {
+      asset: intake("OPTIONAL-LOCATION"),
+      requestId: randomUUID(),
+    });
+    const move = (action: string, assignee: string, location: string) => ({
+      action,
+      assignee,
+      location,
+      notes: "Storage check",
+      expectedVersion: asset.version,
+      requestId: randomUUID(),
+    });
+    await assert.rejects(
+      store.commit("move", move("Assign", "", ""), asset.id),
+      /Choose Engineering Area or Locker/,
+    );
+    asset = await store.commit(
+      "move",
+      move("Assign", "Nora Ellis", ""),
+      asset.id,
+    );
+    assert.equal(asset.location, "");
+    assert.equal(asset.assignee, "Nora Ellis");
+    asset = await store.commit(
+      "edit",
+      {
+        asset: { ...inputOf(asset), notes: "Still with assignee" },
+        expectedVersion: asset.version,
+        requestId: randomUUID(),
+      },
+      asset.id,
+    );
+    const before = await store.snapshot();
+    for (const action of ["Return", "Repair", "Retire"])
+      await assert.rejects(
+        store.commit("move", move(action, "Nora Ellis", ""), asset.id),
+        /Choose Engineering Area or Locker/,
+      );
+    assert.deepEqual(await store.snapshot(), before);
+    asset = await store.commit(
+      "move",
+      move("Transfer", "Maya Chen", ""),
+      asset.id,
+    );
+    assert.equal(asset.location, "");
+    asset = await store.commit("move", move("Return", "", "Locker"), asset.id);
+    assert.equal(asset.location, "Locker");
+    assert.equal(asset.assignee, "");
+    await assert.rejects(
+      store.commit(
+        "edit",
+        {
+          asset: { ...inputOf(asset), location: "" },
+          expectedVersion: asset.version,
+          requestId: randomUUID(),
+        },
+        asset.id,
+      ),
+      /Choose Engineering Area or Locker/,
+    );
+  }));
+
+test("API validation reports bad inputs as 400 without implying an uncertain write", () => {
+  const result = assetInput.safeParse({ ...intake(), location: "Elsewhere" });
+  assert.equal(result.success, false);
+  if (!result.success) assert.equal(failure(result.error).status, 400);
 });

@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "start:approved-local": "node --import tsx scripts/start-approved-local.ts",
-    "start:connected-local": "HC_ASSETS_REUSE_BC_CREDENTIALS=approved HC_ASSETS_REUSE_BC_GOOGLE=approved HC_ASSETS_BACKEND=live-readonly HC_ASSETS_WRITES_ENABLED=disabled HC_ASSETS_AI_ENABLED=disabled HC_ASSETS_OCR_ENABLED=disabled HC_ASSETS_RESALE_ENABLED=disabled HC_ASSETS_LOCAL_PORT=3408 node --import tsx scripts/start-approved-local.ts"
+    "start:connected-local": "HC_ASSETS_REUSE_BC_CREDENTIALS=approved HC_ASSETS_REUSE_BC_GOOGLE=approved HC_ASSETS_USE_BC_MODEL=approved HC_ASSETS_BACKEND=live HC_ASSETS_WRITES_ENABLED=approved HC_ASSETS_WRITER=direct HC_ASSETS_AI_ENABLED=disabled HC_ASSETS_OCR_ENABLED=approved HC_ASSETS_RESALE_ENABLED=disabled HC_ASSETS_LOCAL_PORT=3405 node --import tsx scripts/start-approved-local.ts"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.8",

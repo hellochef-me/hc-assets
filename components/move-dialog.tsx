@@ -1,9 +1,16 @@
 "use client";
 import { Select } from "./select";
 import { useRef, useState } from "react";
-import { Asset, Person, movements, movementInput } from "@/lib/model";
+import {
+  Asset,
+  Person,
+  movements,
+  movementInput,
+  locations,
+  isStorageLocation,
+} from "@/lib/model";
 import { request } from "@/lib/client";
-import { locations } from "@/lib/fixtures";
+import { useSource } from "./source-context";
 import { Button, Dialog, Field, Notice } from "./ui";
 export function MoveDialog({
   asset,
@@ -18,14 +25,19 @@ export function MoveDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { source } = useSource();
   const [action, setAction] = useState<(typeof movements)[number]>(
       asset.assignee ? "Transfer" : "Assign",
     ),
     [assignee, setAssignee] = useState(""),
-    [location, setLocation] = useState(asset.location || "IT storage"),
+    [location, setLocation] = useState(
+      isStorageLocation(asset.location) ? asset.location : "",
+    ),
     [notes, setNotes] = useState(""),
     [error, setError] = useState(""),
     [saving, setSaving] = useState(false);
+  const locationOptional =
+    ["Assign", "Transfer"].includes(action) && Boolean(assignee.trim());
   const receipt = useRef({ payload: "", id: "" });
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -98,18 +110,28 @@ export function MoveDialog({
             </Select>
           </Field>
         )}
-        <Field label="Destination">
-          <input
-            list="move-locations"
+        <Field
+          label="Destination"
+          hint={
+            locationOptional
+              ? "Storage location is optional while assigned to someone."
+              : "Unassigned equipment must be stored in Engineering Area or Locker."
+          }
+        >
+          <Select
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            required
-          />
-          <datalist id="move-locations">
-            {locations.map((l) => (
-              <option key={l}>{l}</option>
+            required={!locationOptional}
+          >
+            <option value="">
+              {locationOptional
+                ? "No storage location — with assignee"
+                : "Choose a storage location"}
+            </option>
+            {locations.map((location) => (
+              <option key={location}>{location}</option>
             ))}
-          </datalist>
+          </Select>
         </Field>
         <Field label="Movement notes">
           <textarea
@@ -123,7 +145,11 @@ export function MoveDialog({
             ? "Retirement is final in this preview."
             : `${asset.assignee || "Unassigned"} · ${asset.location} → ${["Assign", "Transfer"].includes(action) ? assignee || "Choose person" : "Unassigned"} · ${location}`}
           <br />
-          Recorded as Demo operator with server time.
+          Recorded as{" "}
+          {source?.kind === "demo"
+            ? "Demo operator"
+            : "Local operator (authentication deferred)"}{" "}
+          with server time.
         </Notice>
         {error && <Notice warning>{error}</Notice>}
         <div className="dialog-actions">

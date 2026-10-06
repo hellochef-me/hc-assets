@@ -7,6 +7,8 @@ import {
   Snapshot,
   Movement,
   assetInput,
+  editAssetInput,
+  hasValidStorageLocation,
   createInput,
   editInput,
   movementInput,
@@ -125,7 +127,18 @@ export class LocalStore {
         action = m.action;
         notes = m.notes;
       } else {
-        const value = assetInput.parse((data as { asset: unknown }).asset);
+        const value = (kind === "edit" ? editAssetInput : assetInput).parse(
+          (data as { asset: unknown }).asset,
+        );
+        if (
+          !hasValidStorageLocation({
+            location: value.location,
+            assignee: old?.assignee || "",
+          })
+        )
+          throw new StoreError(
+            "Choose Engineering Area or Locker when the asset is unassigned.",
+          );
         const serial = serialIdentity(value.serial);
         const duplicate =
           serial &&

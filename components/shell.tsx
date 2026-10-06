@@ -80,7 +80,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           : source?.kind === "sheet-snapshot"
             ? `Real Sheet snapshot · Read only · Read ${source.checkedAt ? new Date(source.checkedAt).toLocaleString("en-GB") : "Unknown"} · Refreshing this page does not reread Google Sheets`
             : source
-              ? `${source.label} · ${source.readOnly ? "Writes disabled" : "Controlled staging writes"}`
+              ? `${source.label} · ${source.readOnly ? "Writes disabled" : source.kind === "staging" ? "Controlled staging writes" : "Saves sync to Google Sheets"}`
               : "Source not confirmed · Writes unavailable"}
       </footer>
     </>

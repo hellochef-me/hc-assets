@@ -341,3 +341,34 @@ test("OCR suggestions keep concurrent manual edits and still require human seria
   );
   await expect(page.getByLabel("I checked this serial")).not.toBeChecked();
 });
+
+test("live source enables registration/edit/movement and labels the Google writer accurately", async ({
+  page,
+}) => {
+  const live: PreviewSource = {
+    ...source,
+    kind: "live",
+    label: "Live Sheet",
+    aiEnabled: true,
+    ocrEnabled: true,
+    resaleEnabled: false,
+  };
+  await fixture(page, live);
+  await page.goto("/scan?manual=1");
+  await expect(
+    page.getByText("Asset registration", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".site-footer")).toContainText(
+    "Saves sync to Google Sheets",
+  );
+  await expect(
+    page.getByText("Staging registration", { exact: true }),
+  ).toHaveCount(0);
+  await page.goto("/assets/DEMO-002");
+  await expect(
+    page.getByRole("button", { name: "Edit", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Move or assign", exact: true }),
+  ).toBeEnabled();
+});

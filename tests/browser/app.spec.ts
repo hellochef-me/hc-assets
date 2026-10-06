@@ -1,7 +1,7 @@
 import { test, expect, Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { fixtures } from "../../lib/fixtures";
-import { blankAsset, Asset, AssetInput } from "../../lib/model";
+import { blankAsset, Asset, AssetInput, inputOf } from "../../lib/model";
 async function mock(
   page: Page,
   options: { legacyDuplicate?: boolean; failSave?: boolean } = {},
@@ -429,7 +429,10 @@ test("movement remains pending until confirmed, updates actor/from/to history", 
   await page.getByRole("button", { name: "Move or assign" }).click();
   await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
   await page.getByRole("option", { name: "Nora Ellis", exact: true }).click();
-  await page.getByLabel("Destination", { exact: true }).fill("Studio 2");
+  await page
+    .getByRole("combobox", { name: "Destination", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Locker", exact: true }).click();
   await page.getByLabel("Movement notes").fill("Fictional handover");
   await page.getByRole("button", { name: "Confirm movement" }).click();
   await expect(page.getByRole("button", { name: "Saving…" })).toBeDisabled();
@@ -539,4 +542,147 @@ test("stale edit offers latest record while retaining unconfirmed changes", asyn
   await expect(
     page.getByRole("button", { name: "Reload latest asset" }),
   ).toBeVisible();
+});
+
+test("storage locations offer only Engineering Area and Locker throughout the UI", async ({
+  page,
+}) => {
+  await mock(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/locations");
+  await expect(page.locator(".directory-card h2")).toHaveText([
+    "Engineering Area",
+    "Locker",
+  ]);
+  await page.goto("/scan?manual=1");
+  await page.getByRole("combobox", { name: "Location", exact: true }).click();
+  await expect(page.getByRole("option")).toHaveText([
+    "Choose a storage location",
+    "Engineering Area",
+    "Locker",
+  ]);
+  await page.getByRole("option", { name: "Locker", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Location", exact: true }),
+  ).toContainText("Locker");
+  await page.goto("/assets/DEMO-002");
+  await page
+    .getByRole("button", { name: "Move or assign", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Destination", exact: true })
+    .click();
+  await expect(page.getByRole("option")).toHaveText([
+    "Choose a storage location",
+    "Engineering Area",
+    "Locker",
+  ]);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Toggle filters" }).click();
+  await page.getByRole("combobox", { name: "Location filter" }).click();
+  await expect(page.getByRole("option")).toHaveText([
+    "All locations",
+    "Engineering Area",
+    "Locker",
+  ]);
+});
+
+test("legacy locations remain visible and need confirmation without silent relocation", async ({
+  page,
+}) => {
+  const state = await mock(page);
+  state.snapshot.assets[1].location = "Legacy office";
+  await page.goto("/locations");
+  await expect(page.locator(".directory-card h2")).toHaveText([
+    "Engineering Area",
+    "Locker",
+  ]);
+  await expect(
+    page.getByText(
+      "1 existing asset has a missing or different recorded location.",
+      { exact: false },
+    ),
+  ).toBeVisible();
+  await page.goto("/assets/DEMO-002");
+  await expect(page.getByText("Legacy office", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Move or assign", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "Destination", exact: true }),
+  ).toContainText("Choose a storage location");
+  expect(state.snapshot.assets[1].location).toBe("Legacy office");
+});
+
+test("assigned assets can omit storage; return and unassigned edits require a location", async ({
+  page,
+  request,
+}) => {
+  const created = await request.post("/api/inventory", {
+    data: {
+      asset: {
+        ...blankAsset(),
+        name: "Fictional optional-location laptop",
+        serial: `OPTIONAL-${Date.now()}`,
+        serialChecked: true,
+      },
+      requestId: crypto.randomUUID(),
+    },
+  });
+  expect(created.status()).toBe(201);
+  const asset = (await created.json()).asset;
+  const assigned = await request.patch(`/api/assets/${asset.id}`, {
+    data: {
+      action: "Assign",
+      assignee: "Nora Ellis",
+      location: "",
+      notes: "Fictional handover",
+      expectedVersion: 1,
+      requestId: crypto.randomUUID(),
+    },
+  });
+  expect(assigned.status()).toBe(200);
+  await page.goto(`/assets/${asset.id}`);
+  await expect(page.getByText("With assignee", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Location", exact: true }),
+  ).toContainText("No storage location");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await page
+    .getByRole("button", { name: "Move or assign", exact: true })
+    .click();
+  await page.getByRole("combobox", { name: "Movement", exact: true }).click();
+  await page.getByRole("option", { name: "Return", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm movement", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByText("Choose an option before continuing."),
+  ).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Destination", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Locker", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm movement", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.locator(".assignment-bridge")).toContainText("Locker");
+  const latest = (
+    await (await request.get("/api/inventory")).json()
+  ).assets.find((a: Asset) => a.id === asset.id);
+  expect(latest.assignee).toBe("");
+  const blankEdit = await request.patch(`/api/assets/${asset.id}`, {
+    data: {
+      asset: { ...inputOf(latest), location: "" },
+      expectedVersion: latest.version,
+      requestId: crypto.randomUUID(),
+    },
+  });
+  expect(blankEdit.status()).toBe(400);
 });

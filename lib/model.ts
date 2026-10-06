@@ -28,12 +28,21 @@ export const movements = [
   "Repair",
   "Retire",
 ] as const;
+export const locations = ["Engineering Area", "Locker"] as const;
+export function isStorageLocation(
+  value: string,
+): value is (typeof locations)[number] {
+  return locations.some((location) => location === value);
+}
+const storageLocation = z.enum(locations, {
+  error: "Choose Engineering Area or Locker.",
+});
 const text = z.string().trim().max(400);
 const photo = z
   .string()
   .max(900000)
   .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/);
-export const assetInput = z
+const assetDraftInput = z
   .object({
     name: text.min(1, "Enter an asset name."),
     category: z.enum(categories),
@@ -43,7 +52,9 @@ export const assetInput = z
     specs: text,
     condition: z.enum(conditions),
     accessories: text,
-    location: text.min(1, "Choose a location."),
+    location: z.union([storageLocation, z.literal("")], {
+      error: "Choose Engineering Area or Locker.",
+    }),
     notes: z.string().trim().max(2000),
     purchaseCost: z.string().regex(/^$|^\d{1,9}(\.\d{1,2})?$/),
     purchaseCurrency: z.string().trim().max(10),
@@ -74,8 +85,14 @@ export const assetInput = z
         message: "Inspect the device before setting a condition.",
       });
   });
-export type AssetInput = z.infer<typeof assetInput>;
-export interface Asset extends AssetInput {
+export const assetInput = assetDraftInput.safeExtend({
+  location: storageLocation,
+});
+export const editAssetInput = assetDraftInput;
+export type AssetInput = z.infer<typeof editAssetInput>;
+// Preserve locations imported from existing records; only new commands use the enum.
+export interface Asset extends Omit<AssetInput, "location"> {
+  location: string;
   id: string;
   status: (typeof statuses)[number];
   assignee: string;
@@ -117,15 +134,30 @@ export const movementInput = z
   .object({
     action: z.enum(movements),
     assignee: text,
-    location: text.min(1),
+    location: z.union([storageLocation, z.literal("")], {
+      error: "Choose Engineering Area or Locker.",
+    }),
     notes: z.string().trim().max(2000),
     expectedVersion: z.number().int().positive(),
     requestId: z.string().uuid(),
   })
-  .strict();
+  .strict()
+  .superRefine((movement, ctx) => {
+    if (
+      !movement.location &&
+      (!["Assign", "Transfer"].includes(movement.action) || !movement.assignee)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["location"],
+        message:
+          "Choose Engineering Area or Locker when the asset is unassigned.",
+      });
+    }
+  });
 export const editInput = z
   .object({
-    asset: assetInput,
+    asset: editAssetInput,
     expectedVersion: z.number().int().positive(),
     requestId: z.string().uuid(),
   })
@@ -143,7 +175,7 @@ export function blankAsset(): AssetInput {
     specs: "",
     condition: "Unknown",
     accessories: "",
-    location: "IT storage",
+    location: "Engineering Area",
     notes: "",
     purchaseCost: "",
     purchaseCurrency: "AED",
@@ -155,8 +187,24 @@ export function blankAsset(): AssetInput {
   };
 }
 export const display = (v: string) => v || "Unknown";
+export function locationLabel(asset: { location: string; assignee: string }) {
+  return (
+    asset.location || (asset.assignee.trim() ? "With assignee" : "Unknown")
+  );
+}
+export function hasValidStorageLocation(asset: {
+  location: string;
+  assignee: string;
+}) {
+  return (
+    isStorageLocation(asset.location) ||
+    (!asset.location && Boolean(asset.assignee.trim()))
+  );
+}
 export const serialIdentity = (v: string) => v.trim().toLowerCase();
-export function needsReview(a: AssetInput) {
+export function needsReview(
+  a: Pick<AssetInput, "serial" | "specs" | "condition">,
+) {
   return !a.serial || !a.specs || a.condition === "Unknown";
 }
 export function movementState(

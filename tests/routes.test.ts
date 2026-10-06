@@ -179,7 +179,7 @@ test("full staging routes: OCR → create/duplicate/retry → assignment history
         {
           action: "Assign",
           assignee: "Fixture Person",
-          location: "Fixture office",
+          location: "Locker",
           notes: "Complete fixture audit",
           expectedVersion: 1,
           requestId: randomUUID(),
@@ -198,7 +198,7 @@ test("full staging routes: OCR → create/duplicate/retry → assignment history
     assert.equal(
       snapshot.history.find((e: { action: string }) => e.action === "Assign").to
         .location,
-      "Fixture office",
+      "Locker",
     );
     const market = await resale.POST(
       req("/api/resale", { assetId: saved.asset.id }),

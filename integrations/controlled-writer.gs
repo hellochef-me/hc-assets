@@ -94,11 +94,11 @@ function commitCommand(command, spreadsheetId) {
   if (before && before.status === "Retired" && action === "move") throw writerError("invalid", "Retired assets cannot be moved.");
   var now = new Date().toISOString(); var after;
   if (action === "create" || action === "edit") {
-    validateAsset(d.asset);
+    validateAsset(d.asset, before ? before.assignee : "");
     after = Object.assign({}, before || {}, d.asset, { id: before ? before.id : Utilities.getUuid(), assignee: before ? before.assignee : "", status: before && (before.status === "Retired" || before.status === "Repair") ? before.status : before && before.assignee ? "Assigned" : (!d.asset.serial || !d.asset.specs || d.asset.condition === "Unknown" ? "Needs review" : "Available"), createdAt: before ? before.createdAt : now, updatedAt: now, version: before ? before.version + 1 : 1 });
     if (after.serial && inventory.some(function(row) { return row[0] !== after.id && identity(row[5]) === identity(after.serial); })) throw writerError("duplicate", "This serial already exists. Open the existing asset.");
   } else {
-    if (["Assign", "Transfer", "Return", "Repair", "Retire"].indexOf(d.action) < 0 || typeof d.location !== "string" || !d.location.trim() || typeof d.notes !== "string" || d.notes.length > 2000 || typeof d.assignee !== "string") throw writerError("invalid", "Invalid movement.");
+    if (["Assign", "Transfer", "Return", "Repair", "Retire"].indexOf(d.action) < 0 || typeof d.location !== "string" || (["Engineering Area", "Locker"].indexOf(d.location) < 0 && !(d.location === "" && ["Assign", "Transfer"].indexOf(d.action) >= 0 && typeof d.assignee === "string" && d.assignee.trim())) || typeof d.notes !== "string" || d.notes.length > 2000 || typeof d.assignee !== "string") throw writerError("invalid", "Invalid movement.");
     var assigned = d.action === "Assign" || d.action === "Transfer";
     if (assigned && !d.assignee.trim()) throw writerError("invalid", "Choose a person.");
     if (assigned && !(values[2].values || []).slice(1).some(function(row) { return row[0] === d.assignee; })) throw writerError("invalid", "Person no longer exists.");
@@ -137,8 +137,8 @@ function commitCommand(command, spreadsheetId) {
   Sheets.Spreadsheets.batchUpdate({ requests: requests }, spreadsheetId);
   return after;
 }
-function validateAsset(a) {
-  if (!a || typeof a.name !== "string" || !a.name.trim() || typeof a.location !== "string" || !a.location.trim() || ["Laptop", "Phone", "Tablet", "Monitor", "Peripheral", "Other"].indexOf(a.category) < 0 || ["Unknown", "New", "Good", "Fair", "Damaged"].indexOf(a.condition) < 0) throw writerError("invalid", "Invalid asset.");
+function validateAsset(a, assignee) {
+  if (!a || typeof a.name !== "string" || !a.name.trim() || typeof a.location !== "string" || (["Engineering Area", "Locker"].indexOf(a.location) < 0 && !(a.location === "" && String(assignee || "").trim())) || ["Laptop", "Phone", "Tablet", "Monitor", "Peripheral", "Other"].indexOf(a.category) < 0 || ["Unknown", "New", "Good", "Fair", "Damaged"].indexOf(a.condition) < 0) throw writerError("invalid", "Invalid asset.");
   ["name", "location", "brand", "model", "serial", "specs", "accessories"].forEach(function(k) { if (typeof a[k] !== "string" || a[k].length > 400) throw writerError("invalid", "Invalid asset field."); });
   if (typeof a.notes !== "string" || a.notes.length > 2000 || !Array.isArray(a.photos) || a.photos.length > 3 || a.photos.some(function(p) { return typeof p !== "string" || p.length > 900000 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p); })) throw writerError("invalid", "Invalid asset evidence.");
   if (typeof a.purchaseCost !== "string" || !/^$|^\d{1,9}(\.\d{1,2})?$/.test(a.purchaseCost) || typeof a.purchaseCurrency !== "string" || a.purchaseCurrency.length > 10 || typeof a.purchaseDate !== "string" || !/^$|^\d{4}-\d{2}-\d{2}$/.test(a.purchaseDate)) throw writerError("invalid", "Invalid purchase evidence.");

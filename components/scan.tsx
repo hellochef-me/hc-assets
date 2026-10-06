@@ -315,7 +315,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             ? "Demo registration"
             : source?.readOnly
               ? "Read-only lookup"
-              : "Staging registration"}
+              : source?.kind === "staging"
+                ? "Staging registration"
+                : "Asset registration"}
         </span>
       </div>
       <ol className="steps" aria-label="Registration progress">
@@ -588,7 +590,9 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                   {asset.category} ·{" "}
                   {source?.kind === "demo"
                     ? "New demo record"
-                    : "New staging record"}
+                    : source?.kind === "staging"
+                      ? "New staging record"
+                      : "New asset record"}
                 </span>
               </div>
             </div>
