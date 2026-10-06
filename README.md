@@ -1,6 +1,6 @@
 # HelloChef HCAssets — private local rewrite
 
-Mobile-first Next.js preview with an authorized read-only import of the existing Sheet (51 assets, 7 history events, 67 employee rows). It uses fictional fixtures when no import is present or demo mode is explicitly selected. Existing data and IDs have not been changed. No production deployment, live Sheet writes, public preview, credentials or paid AI calls.
+Mobile-first Next.js preview with an authorized read-only import of the existing Sheet (51 assets, 7 history events, 67 employee rows). It uses fictional fixtures when no import is present or demo mode is explicitly selected. Existing data and IDs have not been changed. No production deployment, live Sheet writes, public preview or paid AI calls. Anthony authorized reuse of existing BC credentials on 6 October 2026; the private server loads them at runtime without file copies or browser exposure.
 
 ```sh
 npm ci
@@ -18,6 +18,6 @@ Browser checks require a separate fictional server: `HC_ASSETS_BACKEND=demo HC_A
 
 [Theme and motion](docs/THEME.md) · [Architecture and integration needs](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md) · [Screenshots](docs/screenshots)
 
-Photo recognition and live resale research currently return an explicit unavailable state. Real server OCR, cited AED resale, Google read/auth, and a controlled Sheet writer have route/UI wiring and mocked end-to-end tests. Secure runtime configuration and isolated staging acceptance are pending. The imported snapshot is not continuous Google access. See [integration status and remaining work](docs/INTEGRATIONS.md). See the [user-controlled local credential handoff](docs/LOCAL-SECURE-HANDOFF.md). BC-style direct Sheet writes now avoid a mandatory new Apps Script gateway; OCR is independent of Sheet writes and resale configuration. The reference image’s prices/counts are fictional and are not app data.
+Photo recognition and live resale research currently return an explicit unavailable state. Real server OCR, cited AED resale, Google read/auth, and a controlled Sheet writer have route/UI wiring and mocked end-to-end tests. Secure local runtime reuse is configured; isolated staging acceptance is pending. Restart the continuous read-only connection on 127.0.0.1:3408 with `npm run start:connected-local`. Google returned 51/7/67 records and the OpenAI key passed a free model-list request; paid providers remain disabled. The imported snapshot is not continuous Google access. See [integration status and remaining work](docs/INTEGRATIONS.md). See the [user-controlled local credential handoff](docs/LOCAL-SECURE-HANDOFF.md). BC-style direct Sheet writes now avoid a mandatory new Apps Script gateway; OCR is independent of Sheet writes and resale configuration. The reference image’s prices/counts are fictional and are not app data.
 
 Publica Sans falls back to system sans until an approved licensed local font is available. The logo is the actual SVG from hellochef.me. Mobile behavior is tested in desktop Chrome viewport emulation; physical iOS/Android camera, keyboards and Safari are separate acceptance work.

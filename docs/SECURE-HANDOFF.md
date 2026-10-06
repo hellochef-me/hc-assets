@@ -1,10 +1,10 @@
 # Secure integration handoff — 6 October 2026
 
-The supported local handoff is now documented step by step in [LOCAL-SECURE-HANDOFF.md](LOCAL-SECURE-HANDOFF.md), including the exact secret-free launcher command, available UI limitations and action-time user ownership. The user must run the credential-reuse launcher themselves; a generic chat yes is not permission for the agent to extract/copy/configure secrets.
+The supported local handoff is now documented step by step in [LOCAL-SECURE-HANDOFF.md](LOCAL-SECURE-HANDOFF.md), including the exact secret-free launcher command, available UI limitations and action-time user ownership. Anthony explicitly authorized API-key setup on 6 October 2026. The existing BC credentials are now reused only in the private server process; no env files were copied or values displayed. The restart command is `npm run start:connected-local`.
 
 The mandatory new-gateway path is superseded for local operation by the implemented BC-style direct Google JWT/REST writer. No new Google identity, OpenAI key, Apps Script deployment, HMAC secret or Advanced Sheets service enablement is inherently required. The existing gateway source remains an optional alternative. Direct operation still requires verified existing account access, reviewed metadata tabs and exclusive writer ownership.
 
-Current verified data is an authorized read-only import: 51 assets, 7 legacy history events, 67 employee rows, all existing IDs preserved. The import is mode 0600, Git-ignored and excluded from build tracing. It is not continuous Google access. No real credentials, AI calls, Sheet writes, schema provisioning or public/LAN exposure have been activated.
+Current verified data is an authorized read-only import: 51 assets, 7 legacy history events, 67 employee rows, all existing IDs preserved. The import is mode 0600, Git-ignored and excluded from build tracing. A separate continuous Google read-only connection at 127.0.0.1:3408 now returns the same 51/7/67 counts. The existing OpenAI key passed a free model-list request (HTTP 200). No paid AI calls, Sheet writes, schema provisioning or public/LAN exposure have been activated.
 
 Read-only setup comes first, with both AI and writes explicitly disabled. Existing BC credentials may be reused at runtime only through the user-controlled handoff; no env files are duplicated. A Google access denial stops the attempt; no new grants or key creation is authorized. OCR and research are separate approved capabilities, independent of write permissions.
 
