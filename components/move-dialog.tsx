@@ -1,0 +1,144 @@
+"use client";
+import { useRef, useState } from "react";
+import { Asset, Person, movements, movementInput } from "@/lib/model";
+import { request } from "@/lib/client";
+import { locations } from "@/lib/fixtures";
+import { Button, Dialog, Field, Notice } from "./ui";
+export function MoveDialog({
+  asset,
+  people,
+  open,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  people: Person[];
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [action, setAction] = useState<(typeof movements)[number]>(
+      asset.assignee ? "Transfer" : "Assign",
+    ),
+    [assignee, setAssignee] = useState(""),
+    [location, setLocation] = useState(asset.location || "IT storage"),
+    [notes, setNotes] = useState(""),
+    [error, setError] = useState(""),
+    [saving, setSaving] = useState(false);
+  const receipt = useRef({ payload: "", id: "" });
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const input = {
+      action,
+      assignee: ["Assign", "Transfer"].includes(action) ? assignee : "",
+      location,
+      notes,
+      expectedVersion: asset.version,
+    };
+    const payload = JSON.stringify(input);
+    if (receipt.current.payload !== payload)
+      receipt.current = { payload, id: crypto.randomUUID() };
+    const parsed = movementInput.safeParse({
+      ...input,
+      requestId: receipt.current.id,
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await request(`/api/assets/${encodeURIComponent(asset.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(parsed.data),
+      });
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <Dialog
+      title="Move or assign"
+      open={open}
+      onClose={() => {
+        if (!saving) onClose();
+      }}
+    >
+      <form onSubmit={save}>
+        <p className="muted-text">
+          {asset.name} · {asset.id}
+        </p>
+        <Field label="Movement">
+          <select
+            value={action}
+            onChange={(e) => setAction(e.target.value as typeof action)}
+          >
+            {movements.map((m) => (
+              <option key={m}>{m}</option>
+            ))}
+          </select>
+        </Field>
+        {["Assign", "Transfer"].includes(action) && (
+          <Field label="Assign to">
+            <select
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              required
+            >
+              <option value="">Choose a person</option>
+              {people.map((p) => (
+                <option key={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label="Destination">
+          <input
+            list="move-locations"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            required
+          />
+          <datalist id="move-locations">
+            {locations.map((l) => (
+              <option key={l}>{l}</option>
+            ))}
+          </datalist>
+        </Field>
+        <Field label="Movement notes">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            maxLength={2000}
+          />
+        </Field>
+        <Notice>
+          {action === "Retire"
+            ? "Retirement is final in this preview."
+            : `${asset.assignee || "Unassigned"} · ${asset.location} → ${["Assign", "Transfer"].includes(action) ? assignee || "Choose person" : "Unassigned"} · ${location}`}
+          <br />
+          Recorded as Demo operator with server time.
+        </Notice>
+        {error && <Notice warning>{error}</Notice>}
+        <div className="dialog-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={saving}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button disabled={saving}>
+            {saving ? "Saving…" : "Confirm movement"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
