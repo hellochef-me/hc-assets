@@ -35,6 +35,7 @@ import type { PhotoExtraction } from "@/lib/server/integrations";
 const draftKey = "hcassets.demo.registration.v2";
 export function Scan({ manual = false }: { manual?: boolean }) {
   const { source, canWrite } = useSource();
+  const ocrEnabled = source?.ocrEnabled ?? source?.aiEnabled ?? false;
   const [cameraOpen, setCameraOpen] = useState(false),
     [recognizing, setRecognizing] = useState(false),
     [recognitionNotice, setRecognitionNotice] = useState("");
@@ -72,7 +73,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setRecognizing(false);
   }
   async function readLabel(photoData: string[]) {
-    if (!source?.aiEnabled) {
+    if (!ocrEnabled) {
       setRecognitionNotice(
         "Photo attached. Live OCR is not configured; enter readable label details manually. No AI extraction has been performed.",
       );
@@ -455,7 +456,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           <p className="capture-help">
             JPG, PNG or WebP · Up to 3 photos · 20 MB per original
             <br />
-            {source?.aiEnabled
+            {ocrEnabled
               ? "Server recognition runs after a photo is attached. You review every suggestion."
               : "Live OCR is not configured. Camera capture and uploads work; enter label details manually."}
           </p>
@@ -517,7 +518,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
             <div className="photo-review-actions">
               <Button
                 variant="secondary"
-                disabled={recognizing || !source?.aiEnabled}
+                disabled={recognizing || !ocrEnabled}
                 onClick={() => void readLabel(asset.photos)}
               >
                 Read label

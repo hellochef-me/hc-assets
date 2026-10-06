@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { generateKeyPairSync, randomUUID, verify } from "node:crypto";
 import { blankAsset } from "../lib/model";
 import { inventoryHeaders } from "../lib/server/sheets";
-import { integrationConfiguration } from "../lib/server/integrations";
 import { OpenAiAssetIntelligence } from "../lib/server/openai-intelligence";
 import { GoogleServiceAccountToken } from "../lib/server/google-auth";
 import { ControlledSheetGateway } from "../lib/server/sheet-gateway";
@@ -38,10 +37,6 @@ const sample = () => ({
   name: "Test laptop",
   serial: "NEW-1",
   serialChecked: true,
-});
-test("environment presence cannot enable paid AI or live writes", () => {
-  assert.equal(integrationConfiguration().liveEnabled, false);
-  assert.equal(integrationConfiguration().mode, "demo");
 });
 test("OCR uses server Responses API, strict evidence and unknown fields", async () => {
   let calls = 0;

@@ -13,6 +13,7 @@ import {
 import { GoogleServiceAccountToken } from "./google-auth";
 import { ControlledSheetGateway } from "./sheet-gateway";
 import { ControlledSheetReader } from "./sheet-snapshot";
+import { DirectSheetWriter } from "./direct-sheet-writer";
 import { OpenAiAssetIntelligence } from "./openai-intelligence";
 import { budgetedFetch } from "./ai-budget";
 export const existingSheetId = "1ZeV0krMc_ZeH2e-iOd9ft5jMvGwNcCtu4SPYYXI0x_A";
@@ -58,7 +59,7 @@ export async function importedSnapshot(
 }
 function selected() {
   const value = process.env.HC_ASSETS_BACKEND || "auto";
-  if (!["auto", "demo", "live-readonly", "staging"].includes(value))
+  if (!["auto", "demo", "live-readonly", "live", "staging"].includes(value))
     throw new StoreError("Unsupported inventory configuration.", 503);
   if (
     value === "staging" &&
@@ -71,36 +72,57 @@ function selected() {
     );
   return value;
 }
+function aiCapabilities() {
+  const key = !!process.env.OPENAI_API_KEY;
+  const ocrEnabled =
+    key &&
+    (process.env.HC_ASSETS_OCR_ENABLED || process.env.HC_ASSETS_AI_ENABLED) ===
+      "approved" &&
+    !!process.env.HC_ASSETS_OPENAI_MODEL;
+  const resaleEnabled =
+    key &&
+    (process.env.HC_ASSETS_RESALE_ENABLED ||
+      process.env.HC_ASSETS_AI_ENABLED) === "approved" &&
+    !!process.env.HC_ASSETS_SEARCH_MODEL;
+  return { ocrEnabled, resaleEnabled, aiEnabled: ocrEnabled || resaleEnabled };
+}
 export async function previewSource(
   directory?: string,
 ): Promise<PreviewSource> {
   const backend = selected();
-  if (backend === "staging" || backend === "live-readonly")
+  if (
+    backend === "staging" ||
+    backend === "live-readonly" ||
+    backend === "live"
+  )
     return {
       kind: backend,
-      label: backend === "staging" ? "Staging Sheet" : "Live Sheet · read only",
-      readOnly: backend === "live-readonly",
+      label:
+        backend === "staging"
+          ? "Staging Sheet"
+          : backend === "live"
+            ? "Live Sheet"
+            : "Live Sheet · read only",
+      readOnly:
+        backend === "live-readonly" ||
+        process.env.HC_ASSETS_WRITES_ENABLED !== "approved",
       checkedAt: null,
-      aiEnabled:
-        backend === "staging" &&
-        process.env.HC_ASSETS_AI_ENABLED === "approved" &&
-        !!process.env.OPENAI_API_KEY &&
-        !!process.env.HC_ASSETS_OPENAI_MODEL &&
-        !!process.env.HC_ASSETS_SEARCH_MODEL,
+      ...aiCapabilities(),
     };
   if (backend === "auto") {
     const imported = await importedSnapshot(directory);
-    if (imported?.source) return imported.source;
+    if (imported?.source) return { ...imported.source, ...aiCapabilities() };
   }
   return {
     kind: "demo",
     label: "Local demo",
     readOnly: false,
     checkedAt: null,
-    aiEnabled: false,
+    ...aiCapabilities(),
   };
 }
 let token: GoogleServiceAccountToken | undefined;
+let writeToken: GoogleServiceAccountToken | undefined;
 function googleToken() {
   token ??= new GoogleServiceAccountToken({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "",
@@ -108,15 +130,24 @@ function googleToken() {
   });
   return token.accessToken();
 }
+function googleWriteToken() {
+  writeToken ??= new GoogleServiceAccountToken({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "",
+    privateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "",
+    scope: "readwrite",
+  });
+  return writeToken.accessToken();
+}
 export async function backendSnapshot(): Promise<Snapshot> {
   const source = await previewSource();
-  if (source.kind === "sheet-snapshot") return (await importedSnapshot())!;
+  if (source.kind === "sheet-snapshot")
+    return { ...(await importedSnapshot())!, source };
   if (source.kind === "demo") return { ...(await store.snapshot()), source };
   const id =
-    source.kind === "live-readonly"
+    source.kind === "live-readonly" || source.kind === "live"
       ? existingSheetId
       : process.env.HC_ASSETS_SPREADSHEET_ID!;
-  if (source.kind === "staging")
+  if (source.kind === "staging" || source.kind === "live")
     return {
       ...(await new ControlledSheetReader(id, googleToken).snapshot()),
       source: { ...source, checkedAt: new Date().toISOString() },
@@ -150,10 +181,23 @@ export async function backendCommit(
 ): Promise<Asset> {
   const source = await assertWritable();
   if (source.kind === "demo") return store.commit(action, data, id);
+  const writer = process.env.HC_ASSETS_WRITER || "direct";
+  if (writer === "direct")
+    return new DirectSheetWriter(
+      source.kind === "live"
+        ? existingSheetId
+        : process.env.HC_ASSETS_SPREADSHEET_ID!,
+      googleWriteToken,
+    ).commit(action, data, "Local operator (authentication deferred)", id);
+  if (writer !== "gateway")
+    throw new StoreError("Unsupported Sheet writer configuration.", 503);
   const gateway = new ControlledSheetGateway({
     url: process.env.HC_ASSETS_GATEWAY_URL || "",
     signingSecret: process.env.HC_ASSETS_GATEWAY_SECRET || "",
-    spreadsheetId: process.env.HC_ASSETS_SPREADSHEET_ID || "",
+    spreadsheetId:
+      source.kind === "live"
+        ? existingSheetId
+        : process.env.HC_ASSETS_SPREADSHEET_ID || "",
   });
   return gateway.commit(
     action,
@@ -162,9 +206,9 @@ export async function backendCommit(
     id,
   );
 }
-export async function intelligence() {
+export async function intelligence(task: "ocr" | "resale" = "ocr") {
   const source = await previewSource();
-  if (!source.aiEnabled)
+  if (!(task === "ocr" ? source.ocrEnabled : source.resaleEnabled))
     throw new StoreError(
       "Live AI is not connected. Secure server configuration and spending approval are required. Enter label details manually.",
       503,

@@ -164,6 +164,30 @@ export async function writerMock() {
   return {
     tables,
     fetcher,
+    restFetcher: (async (url, init) => {
+      const target = new URL(String(url));
+      const api = context.Sheets as {
+        Spreadsheets: {
+          get: () => unknown;
+          Values: { batchGet: () => { valueRanges: { values: string[][] }[] } };
+          batchUpdate: (body: unknown) => unknown;
+        };
+      };
+      if (target.pathname.endsWith("/values:batchGet")) {
+        const result = api.Spreadsheets.Values.batchGet();
+        return Response.json({
+          valueRanges: result.valueRanges.slice(
+            0,
+            target.searchParams.getAll("ranges").length,
+          ),
+        });
+      }
+      if (target.pathname.endsWith(":batchUpdate")) {
+        api.Spreadsheets.batchUpdate(JSON.parse(String(init?.body)));
+        return Response.json({ replies: [] });
+      }
+      return Response.json(api.Spreadsheets.get());
+    }) as typeof fetch,
     client,
     calls: () => calls,
     lose: () => {

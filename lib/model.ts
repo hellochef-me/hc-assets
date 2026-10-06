@@ -105,11 +105,13 @@ export interface Snapshot {
   source?: PreviewSource;
 }
 export interface PreviewSource {
-  kind: "demo" | "sheet-snapshot" | "staging" | "live-readonly";
+  kind: "demo" | "sheet-snapshot" | "staging" | "live-readonly" | "live";
   label: string;
   readOnly: boolean;
   checkedAt: string | null;
   aiEnabled: boolean;
+  ocrEnabled?: boolean;
+  resaleEnabled?: boolean;
 }
 export const movementInput = z
   .object({

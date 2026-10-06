@@ -17,7 +17,7 @@ export default function Page() {
               ? "Real values read through the existing authorized Sheets connection. This is a timestamped snapshot, not continuous live synchronization. Refreshing this page reloads the snapshot; an authorized Sheet reread is needed to update it."
               : source?.readOnly
                 ? "Authenticated server reads; writes disabled."
-                : "Isolated staging backend. Controlled writes require complete server configuration."}
+                : "Controlled local Sheet backend. Writes require approved configuration and exclusive writer ownership."}
         </Notice>
         {error && <Notice warning>{error}</Notice>}
         <dl>
@@ -48,13 +48,13 @@ export default function Page() {
                 ? "Disabled · original Sheet unchanged"
                 : source?.kind === "demo"
                   ? "Local demo only"
-                  : "Staging controlled gateway"}
+                  : "Controlled Sheet writer"}
             </dd>
           </div>
           <div>
             <dt>Photo recognition</dt>
             <dd>
-              {source?.aiEnabled
+              {(source?.ocrEnabled ?? source?.aiEnabled)
                 ? "Server provider enabled; human review required"
                 : "Not configured · camera/upload and manual entry work"}
             </dd>
@@ -62,7 +62,7 @@ export default function Page() {
           <div>
             <dt>Resale research</dt>
             <dd>
-              {source?.aiEnabled
+              {(source?.resaleEnabled ?? source?.aiEnabled)
                 ? "Current cited AED sources; may return no comparable"
                 : "Not configured · no estimate fabricated"}
             </dd>

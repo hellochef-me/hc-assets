@@ -105,6 +105,43 @@ test("AI allowance persists attempts across restart and resets minute/day indepe
       1,
     );
   }));
+test("approved OCR works independently of Sheet writes and resale configuration; credential presence alone never enables it", async () => {
+  const names = [
+    "HC_ASSETS_BACKEND",
+    "OPENAI_API_KEY",
+    "HC_ASSETS_OPENAI_MODEL",
+    "HC_ASSETS_SEARCH_MODEL",
+    "HC_ASSETS_AI_ENABLED",
+    "HC_ASSETS_OCR_ENABLED",
+    "HC_ASSETS_RESALE_ENABLED",
+    "HC_ASSETS_WRITES_ENABLED",
+  ];
+  const previous = new Map(names.map((name) => [name, process.env[name]]));
+  try {
+    process.env.HC_ASSETS_BACKEND = "live-readonly";
+    process.env.OPENAI_API_KEY = "synthetic-test-key";
+    process.env.HC_ASSETS_OPENAI_MODEL = "synthetic-vision";
+    for (const name of names.slice(3)) delete process.env[name];
+    assert.equal((await previewSource()).ocrEnabled, false);
+    await assert.rejects(intelligence(), /not connected/);
+    process.env.HC_ASSETS_OCR_ENABLED = "approved";
+    const source = await previewSource();
+    assert.equal(source.ocrEnabled, true);
+    assert.equal(source.resaleEnabled, false);
+    assert.equal(source.readOnly, true);
+    await intelligence("ocr"); // Constructs a provider, makes no paid call.
+    await assert.rejects(intelligence("resale"), /not connected/);
+    await assert.rejects(assertWritable(), /read only/);
+    process.env.HC_ASSETS_BACKEND = "live";
+    assert.equal((await previewSource()).readOnly, true);
+    process.env.HC_ASSETS_WRITES_ENABLED = "approved";
+    assert.equal((await previewSource()).readOnly, false);
+  } finally {
+    for (const [name, value] of previous)
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+  }
+});
 test("active/corrupt AI budget locks fail closed", () =>
   temporary(async (directory) => {
     await mkdir(path.join(directory, "ai-budget.lock"));

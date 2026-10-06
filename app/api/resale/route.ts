@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export async function POST(r: Request) {
   try {
     guard(r);
-    const provider = await intelligence();
+    const provider = await intelligence("resale");
     const input = z
       .object({ assetId: z.string().min(1).max(400) })
       .strict()

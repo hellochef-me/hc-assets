@@ -234,7 +234,7 @@ export function Detail({ id }: { id: string }) {
               <RefreshCw />
               <h3>No market sources yet</h3>
               <p>
-                {source?.aiEnabled
+                {(source?.resaleEnabled ?? source?.aiEnabled)
                   ? "Run research to check current UAE asking prices and their sources."
                   : "No estimate has been fabricated. Secure server configuration is required for live research."}
               </p>

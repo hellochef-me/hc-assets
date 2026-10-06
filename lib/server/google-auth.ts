@@ -14,7 +14,11 @@ export class GoogleServiceAccountToken {
   private cached?: { token: string; until: number };
   private pending?: Promise<string>;
   constructor(
-    private config: { email: string; privateKey: string },
+    private config: {
+      email: string;
+      privateKey: string;
+      scope?: "readonly" | "readwrite";
+    },
     private fetcher: typeof fetch = fetch,
     private clock = () => Date.now(),
   ) {}
@@ -37,7 +41,7 @@ export class GoogleServiceAccountToken {
       );
     const now = Math.floor(this.clock() / 1000);
     const audience = "https://oauth2.googleapis.com/token";
-    const unsigned = `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ iss: this.config.email, scope: "https://www.googleapis.com/auth/spreadsheets.readonly", aud: audience, iat: now, exp: now + 3600 })}`;
+    const unsigned = `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ iss: this.config.email, scope: this.config.scope === "readwrite" ? "https://www.googleapis.com/auth/spreadsheets" : "https://www.googleapis.com/auth/spreadsheets.readonly", aud: audience, iat: now, exp: now + 3600 })}`;
     let assertion: string;
     try {
       const signer = createSign("RSA-SHA256");

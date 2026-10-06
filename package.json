@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "test": "node --conditions=react-server --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "start:approved-local": "node --import tsx scripts/start-approved-local.ts"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.8",

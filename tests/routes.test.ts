@@ -39,6 +39,8 @@ test("full staging routes: OCR → create/duplicate/retry → assignment history
     "OPENAI_API_KEY",
     "HC_ASSETS_OPENAI_MODEL",
     "HC_ASSETS_SEARCH_MODEL",
+    "HC_ASSETS_WRITER",
+    "HC_ASSETS_WRITES_ENABLED",
   ];
   const previous = new Map(names.map((name) => [name, process.env[name]]));
   const directory = await mkdtemp(path.join(tmpdir(), "hc-routes-test-"));
@@ -55,6 +57,8 @@ test("full staging routes: OCR → create/duplicate/retry → assignment history
     "fictional-openai-token",
     "fictional-vision",
     "fictional-search",
+    "direct",
+    "approved",
   ];
   let paidAttempts = 0;
   try {
@@ -71,9 +75,7 @@ test("full staging routes: OCR → create/duplicate/retry → assignment history
           expires_in: 3600,
         });
       if (value.startsWith("https://sheets.googleapis.com/"))
-        return Response.json({
-          valueRanges: writer.tables.slice(0, 5).map((values) => ({ values })),
-        });
+        return writer.restFetcher(url, init);
       if (value.startsWith("https://script.google.com/"))
         return writer.fetcher(url, init);
       if (value === "https://api.openai.com/v1/responses") {
