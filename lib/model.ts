@@ -75,24 +75,7 @@ const assetDraftInput = z
         path: ["coverPhotoIndex"],
         message: "Choose an attached device photo for the thumbnail.",
       });
-    if (a.serial && !a.serialChecked)
-      ctx.addIssue({
-        code: "custom",
-        path: ["serialChecked"],
-        message: "Check the serial number before saving.",
-      });
-    if (a.specs && !a.specsChecked)
-      ctx.addIssue({
-        code: "custom",
-        path: ["specsChecked"],
-        message: "Verify specifications on the device, or leave them Unknown.",
-      });
-    if (a.condition !== "Unknown" && !a.conditionChecked)
-      ctx.addIssue({
-        code: "custom",
-        path: ["conditionChecked"],
-        message: "Inspect the device before setting a condition.",
-      });
+
   });
 export const assetInput = assetDraftInput.safeExtend({
   location: storageLocation,
@@ -142,6 +125,7 @@ export interface PreviewSource {
   aiEnabled: boolean;
   ocrEnabled?: boolean;
   resaleEnabled?: boolean;
+  assistantEnabled?: boolean;
 }
 export const movementInput = z
   .object({

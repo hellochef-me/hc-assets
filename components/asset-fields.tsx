@@ -8,6 +8,7 @@ import {
   isStorageLocation,
 } from "@/lib/model";
 import { Field, Notice } from "./ui";
+import { EntryListEditor } from "./entry-list";
 export function AssetFields({
   asset,
   setAsset,
@@ -92,16 +93,6 @@ export function AssetFields({
           ))}
         </Select>
       </Field>
-      {asset.condition !== "Unknown" && (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={asset.conditionChecked}
-            onChange={(e) => change("conditionChecked", e.target.checked)}
-          />
-          I inspected the physical condition and basic function
-        </label>
-      )}
     </>
   );
   const ownershipFields = (
@@ -166,16 +157,6 @@ export function AssetFields({
         </Field>
         {serialControls}
       </div>
-      {asset.serial && (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={asset.serialChecked}
-            onChange={(e) => change("serialChecked", e.target.checked)}
-          />
-          I checked this serial against the device label
-        </label>
-      )}
       {serialHelp}
       {registration && (
         <>
@@ -204,37 +185,25 @@ export function AssetFields({
             Battery health and working condition need a manual check. Photos
             alone cannot verify them.
           </Notice>
-          <Field label="Specifications">
-            <input
-              value={asset.specs}
-              onChange={(e) =>
-                setAsset({
-                  ...asset,
-                  specs: e.target.value,
-                  specsChecked: false,
-                })
-              }
-              placeholder="Unknown"
-            />
-          </Field>
-          {asset.specs && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={asset.specsChecked}
-                onChange={(e) => change("specsChecked", e.target.checked)}
-              />
-              Specifications verified on the device
-            </label>
-          )}
+          <EntryListEditor
+            label="Specifications"
+            value={asset.specs}
+            onChange={(value) =>
+              setAsset({
+                ...asset,
+                specs: value,
+                specsChecked: false,
+              })
+            }
+            placeholder="Unknown"
+          />
           {!compact && conditionField}
-          <Field label="Accessories">
-            <input
-              value={asset.accessories}
-              onChange={(e) => change("accessories", e.target.value)}
-              placeholder="Not checked"
-            />
-          </Field>
+          <EntryListEditor
+            label="Accessories"
+            value={asset.accessories}
+            onChange={(value) => change("accessories", value)}
+            placeholder="Not checked"
+          />
         </div>
       </details>
       {!registration && ownershipFields}

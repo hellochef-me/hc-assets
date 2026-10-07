@@ -59,7 +59,7 @@ for (const width of [390, 1280])
       .getByLabel("Asset name", { exact: true })
       .fill("Fictional device");
     await page.getByLabel("Serial number", { exact: true }).fill("PHOTO-123");
-    await page.getByLabel("I checked this serial").check();
+
     await page.getByRole("button", { name: "Continue", exact: true }).click();
     const card = page.getByRole("region", { name: "Device thumbnail" });
     await expect(card.locator(".device img")).toHaveCount(0);

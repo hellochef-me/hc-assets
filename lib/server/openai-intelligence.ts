@@ -157,7 +157,11 @@ export class OpenAiAssetIntelligence implements AssetIntelligence {
         Authorization: `Bearer ${this.config.apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ store: false, max_output_tokens: 4000, ...body }),
+      body: JSON.stringify({
+        store: false,
+        max_output_tokens: 4000,
+        ...body,
+      }),
     });
   }
   private async withIndicativeEstimate(
@@ -200,7 +204,8 @@ export class OpenAiAssetIntelligence implements AssetIntelligence {
           assumptions: estimate.assumptions,
         },
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof ProviderError && error.code === "limit") throw error;
       return {
         ...evidence,
         limitations: [
@@ -209,6 +214,43 @@ export class OpenAiAssetIntelligence implements AssetIntelligence {
         ],
       };
     }
+  }
+  /** A planning estimate uses one model request and never a web-search tool. */
+  async estimate(identity: {
+    brand: string;
+    model: string;
+    specs: string;
+    condition: string;
+  }): Promise<ResaleEvidence> {
+    if (!this.config.searchModel)
+      throw new ProviderError(
+        "configuration",
+        "The server estimate model is not configured.",
+      );
+    const data = z
+      .object({
+        brand: z.string().trim().max(400),
+        model: z
+          .string()
+          .trim()
+          .min(2, "Add the asset's model before estimating resale value.")
+          .max(400),
+        specs: z.string().max(400),
+        condition: z.string().max(400),
+      })
+      .strict()
+      .parse(identity);
+    return this.withIndicativeEstimate(
+      {
+        comparables: [],
+        rangeAED: null,
+        asOf: null,
+        limitations: [
+          "Quick low confidence model planning estimate. No current market sources were searched.",
+        ],
+      },
+      data,
+    );
   }
   async extract(photos: string[]): Promise<PhotoExtraction> {
     if (!this.config.visionModel)

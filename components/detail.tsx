@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  MessageCircle,
   Pencil,
   ArrowLeftRight,
   User,
@@ -28,6 +29,7 @@ import { DevicePhoto } from "./device-photo";
 import { AssetPortrait, AssetSummary } from "./asset-visual";
 import { LabelRescan } from "./label-rescan";
 import { AssetFields } from "./asset-fields";
+import { EntryListDisplay } from "./entry-list";
 import { MoveDialog } from "./move-dialog";
 import { AssetNotes } from "./asset-notes";
 import { useSource } from "./source-context";
@@ -225,6 +227,15 @@ export function Detail({ id }: { id: string }) {
               </Button>
             </div>
           </div>
+          {(source?.assistantEnabled || source?.kind === "demo") && (
+            <Link
+              className="ask-it-detail-link"
+              href={`/ask-it?asset=${encodeURIComponent(asset.id)}`}
+            >
+              <MessageCircle />
+              Ask IT about this asset
+            </Link>
+          )}
           <div className="overview-ownership">
             <div>
               <User />
@@ -259,13 +270,24 @@ export function Detail({ id }: { id: string }) {
                   ["Category", asset.category],
                   ["Brand", display(asset.brand)],
                   ["Model", display(asset.model)],
-                  ["Specifications", display(asset.specs)],
+                  ["Specifications", asset.specs],
                   ["Condition", asset.condition],
-                  ["Accessories", asset.accessories || "Not checked"],
+                  ["Accessories", asset.accessories],
                 ].map(([key, value]) => (
                   <div key={key}>
                     <dt>{key}</dt>
-                    <dd>{value}</dd>
+                    <dd>
+                      {key === "Specifications" || key === "Accessories" ? (
+                        <EntryListDisplay
+                          value={value}
+                          emptyLabel={
+                            key === "Accessories" ? "Not checked" : "Unknown"
+                          }
+                        />
+                      ) : (
+                        value
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -480,36 +502,68 @@ export function Detail({ id }: { id: string }) {
                     ["purchaseCurrency", "Currency"],
                     ["purchaseDate", "Purchase date"],
                     ["notes", "Notes"],
-                    ["serialChecked", "Serial checked"],
-                    ["specsChecked", "Specifications verified"],
-                    ["conditionChecked", "Condition inspected"],
                   ] as const
                 )
                   .filter(([key]) => baseline?.[key] !== draft[key])
-                  .map(([key, label]) => (
-                    <div className="change-row" key={key}>
-                      <h4>{label}</h4>
-                      <div>
-                        <span>
-                          <small>Current value</small>
-                          {typeof baseline?.[key] === "boolean"
-                            ? baseline[key]
-                              ? "Yes"
-                              : "No"
-                            : String(baseline?.[key] || "Unknown")}
-                        </span>
-                        <ArrowLeftRight />
-                        <strong>
-                          <small>New value</small>
-                          {typeof draft[key] === "boolean"
-                            ? draft[key]
-                              ? "Yes"
-                              : "No"
-                            : String(draft[key] || "Unknown")}
-                        </strong>
+                  .map(([key, label]) => {
+                    const isList = key === "specs" || key === "accessories";
+                    const CurrentValue = isList ? "div" : "span";
+                    const NewValue = isList ? "div" : "strong";
+                    return (
+                      <div className="change-row" key={key}>
+                        <h4>{label}</h4>
+                        <div>
+                          <CurrentValue>
+                            <small>Current value</small>
+                            {key === "specs" || key === "accessories" ? (
+                              <EntryListDisplay
+                                value={String(baseline?.[key] || "")}
+                                emptyLabel={
+                                  key === "accessories"
+                                    ? "Not checked"
+                                    : "Unknown"
+                                }
+                              />
+                            ) : typeof baseline?.[key] === "boolean" ? (
+                              baseline[key] ? (
+                                "Yes"
+                              ) : (
+                                "No"
+                              )
+                            ) : (
+                              String(baseline?.[key] || "Unknown")
+                            )}
+                          </CurrentValue>
+                          <ArrowLeftRight />
+                          <NewValue
+                            className={
+                              isList ? "entry-list-review-new" : undefined
+                            }
+                          >
+                            <small>New value</small>
+                            {key === "specs" || key === "accessories" ? (
+                              <EntryListDisplay
+                                value={String(draft[key] || "")}
+                                emptyLabel={
+                                  key === "accessories"
+                                    ? "Not checked"
+                                    : "Unknown"
+                                }
+                              />
+                            ) : typeof draft[key] === "boolean" ? (
+                              draft[key] ? (
+                                "Yes"
+                              ) : (
+                                "No"
+                              )
+                            ) : (
+                              String(draft[key] || "Unknown")
+                            )}
+                          </NewValue>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 {thumbnailPhoto(asset) !== thumbnailPhoto(draft) && (
                   <section>
                     <h3>

@@ -2,9 +2,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Database, Settings } from "lucide-react";
+import {
+  Menu,
+  X,
+  Database,
+  Settings,
+  ScanLine,
+  MessageCircle,
+  Layers,
+} from "lucide-react";
 import { Button } from "./ui";
 import { useSource } from "./source-context";
+import "./ask-it.css";
 export function Shell({ children }: { children: React.ReactNode }) {
   const { source } = useSource();
   const path = usePathname(),
@@ -35,6 +44,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <nav aria-label="Main navigation" className={menu ? "open" : ""}>
           {[
             ["/", "Inventory"],
+            ["/scan", "Scan"],
+            ...(source?.assistantEnabled || source?.kind === "demo"
+              ? [["/ask-it", "Ask IT"]]
+              : []),
             ["/people", "People"],
             ["/locations", "Locations"],
             ["/activity", "Activity"],
@@ -87,6 +100,27 @@ export function Shell({ children }: { children: React.ReactNode }) {
               ? `${source.label} · ${source.readOnly ? "Writes disabled" : source.kind === "staging" ? "Controlled staging writes" : "Saves sync to Google Sheets"}`
               : "Source not confirmed · Writes unavailable"}
       </footer>
+      {(source?.assistantEnabled || source?.kind === "demo") && (
+        <nav className="it-mobile-nav" aria-label="Quick navigation">
+          {[
+            ["/", "Inventory", Layers],
+            ["/scan", "Scan", ScanLine],
+            ["/ask-it", "Ask IT", MessageCircle],
+          ].map(([href, label, Icon]) => {
+            const NavIcon = Icon as typeof Layers;
+            return (
+              <Link
+                key={String(href)}
+                href={String(href)}
+                aria-current={path === href ? "page" : undefined}
+              >
+                <NavIcon />
+                {String(label)}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </>
   );
 }

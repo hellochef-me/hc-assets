@@ -16,7 +16,7 @@ import { ControlledSheetReader } from "./sheet-snapshot";
 import { DirectSheetWriter } from "./direct-sheet-writer";
 import { OpenAiAssetIntelligence } from "./openai-intelligence";
 import { budgetedFetch } from "./ai-budget";
-import { hosted, acquireHostedWriter } from "./hosted-coordination";
+import { hosted, sharedCoordination, acquireHostedWriter } from "./hosted-coordination";
 export const existingSheetId = "1ZeV0krMc_ZeH2e-iOd9ft5jMvGwNcCtu4SPYYXI0x_A";
 const importedSchema = z
   .object({
@@ -49,6 +49,7 @@ export async function importedSnapshot(
         readOnly: true,
         checkedAt: value.readAt,
         aiEnabled: false,
+        assistantEnabled: false,
       },
     };
   } catch {
@@ -110,10 +111,16 @@ export async function previewSource(
         process.env.HC_ASSETS_WRITES_ENABLED !== "approved",
       checkedAt: null,
       ...aiCapabilities(),
+      assistantEnabled: process.env.HC_ASSETS_ASSISTANT_ENABLED === "approved",
     };
   if (backend === "auto") {
     const imported = await importedSnapshot(directory);
-    if (imported?.source) return { ...imported.source, ...aiCapabilities() };
+    if (imported?.source)
+      return {
+        ...imported.source,
+        ...aiCapabilities(),
+        assistantEnabled: false,
+      };
   }
   return {
     kind: "demo",
@@ -121,6 +128,7 @@ export async function previewSource(
     readOnly: false,
     checkedAt: null,
     ...aiCapabilities(),
+    assistantEnabled: true,
   };
 }
 let token: GoogleServiceAccountToken | undefined;
@@ -192,7 +200,7 @@ export async function backendCommit(
       googleWriteToken,
       fetch,
       undefined,
-      hosted() ? acquireHostedWriter : undefined,
+      sharedCoordination() ? acquireHostedWriter : undefined,
     ).commit(
       action,
       data,

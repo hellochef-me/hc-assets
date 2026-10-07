@@ -43,6 +43,10 @@ const quotaSchema = z
   })
   .strict();
 export const hosted = () => process.env.VERCEL_ENV === "production";
+// A connected loopback preview must coordinate with the production writer too.
+// Keep this separate from hosted(), which controls public request/access rules.
+export const sharedCoordination = () =>
+  hosted() || process.env.HC_ASSETS_SHARED_COORDINATION === "approved";
 
 // A durable, non-expiring mutex. A terminated holder requires reconciliation;
 // another instance never steals its lock while a Sheet request may still run.

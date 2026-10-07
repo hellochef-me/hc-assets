@@ -87,7 +87,7 @@ test("missing OCR character requires comparison before proceeding and opens exis
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Continue as new device", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await expect(
     page.getByLabel("Serial number", { exact: true }),
   ).not.toBeVisible();
@@ -104,11 +104,10 @@ test("distinct-device override is explicit and resets when starting a new scan",
 }) => {
   await setup(page, "QYC7K1QR9");
   await upload(page);
-  await page.getByLabel("I compared these records").check();
   await page
     .getByRole("button", { name: "Continue as new device", exact: true })
     .click();
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
@@ -132,7 +131,7 @@ test("race-time exact duplicate redirects to existing asset instead of leaving a
     .getByLabel("Asset name", { exact: true })
     .fill("Fictional race laptop");
   await page.getByLabel("Serial number", { exact: true }).fill("UNIQUE9X");
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await page.getByRole("button", { name: "Save asset", exact: true }).click();
@@ -149,7 +148,7 @@ test("registration assigns an owner atomically and details/edit support reassign
     .getByLabel("Asset name", { exact: true })
     .fill("Fictional owner workflow");
   await page.getByLabel("Serial number", { exact: true }).fill(serial);
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("combobox", { name: "Assign to", exact: true }).click();
   await page.getByRole("option", { name: "Nora Ellis", exact: true }).click();
   await page.getByRole("combobox", { name: "Location", exact: true }).click();
@@ -178,7 +177,7 @@ test("registration assigns an owner atomically and details/edit support reassign
   await expect(page.locator(".overview-ownership")).toContainText("Maya Chen");
   await page.goto("/scan?manual=1");
   await page.getByLabel("Serial number", { exact: true }).fill(serial);
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Open existing asset/ }).click();
   await expect(page).toHaveURL(new RegExp(id));

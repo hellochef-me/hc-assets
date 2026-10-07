@@ -8,9 +8,7 @@ import {
   ArrowLeft,
   ScanLine,
   ShieldCheck,
-  Check,
   Trash2,
-  FileText,
 } from "lucide-react";
 import {
   Asset,
@@ -32,6 +30,12 @@ import {
 } from "@/lib/client";
 import { Button, Notice, Device, Field } from "./ui";
 import { Select } from "./select";
+import { EntryListDisplay } from "./entry-list";
+import {
+  assistantHandoffKey,
+  freshAssistant,
+  persistAssistant,
+} from "@/lib/assistant-flow";
 import { AssetFields } from "./asset-fields";
 import { DevicePhoto } from "./device-photo";
 import { AssetPortrait } from "./asset-visual";
@@ -76,7 +80,8 @@ export function Scan({ manual = false }: { manual?: boolean }) {
   const photoInput = useRef<HTMLInputElement>(null),
     cameraInput = useRef<HTMLInputElement>(null),
     operation = useRef(0),
-    receipt = useRef({ payload: "", id: "" });
+    receipt = useRef({ payload: "", id: "" }),
+    draftIdentity = useRef("");
   const latestAsset = useRef(asset),
     completed = useRef(false),
     submitting = useRef(false);
@@ -102,11 +107,43 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       /* navigation remains safe */
     }
   }
+  function handoffToAssistant(e: React.MouseEvent) {
+    if (saving || preparing || recognizing || checking || receipt.current.id) {
+      e.preventDefault();
+      setError(
+        "Finish or resolve the current operation before switching to Ask IT.",
+      );
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        assistantHandoffKey,
+        persistAssistant({
+          ...freshAssistant(),
+          draftId: draftIdentity.current || crypto.randomUUID(),
+          asset,
+          assignee,
+          stage: asset.serial
+            ? "confirm-serial"
+            : asset.name
+              ? "unknown"
+              : "capture",
+          unknownConfirmed,
+          reviewedMatchIds: [],
+        }),
+      );
+      clearDraft();
+    } catch {
+      e.preventDefault();
+      setError("Your draft could not be passed to Ask IT. Finish it in Scan.");
+    }
+  }
   function openExisting(id: string) {
     clearDraft();
     router.replace(`/assets/${encodeURIComponent(id)}`);
   }
   function startFresh() {
+    draftIdentity.current = crypto.randomUUID();
     cancelRecognition();
     operation.current++;
     setPreparing(false);
@@ -251,6 +288,10 @@ export function Scan({ manual = false }: { manual?: boolean }) {
       const raw = sessionStorage.getItem(draftKey);
       if (raw) {
         const draft = JSON.parse(raw);
+        draftIdentity.current =
+          typeof draft.draftId === "string" && draft.draftId
+            ? draft.draftId
+            : crypto.randomUUID();
         if (draft.asset && typeof draft.step === "number") {
           // Restore an interrupted browser session after hydration; never copy live data.
           const cover = draft.asset.coverPhotoIndex;
@@ -285,6 +326,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
         "Your previous draft could not be restored. Start a fresh registration.",
       );
     }
+    draftIdentity.current ||= crypto.randomUUID();
     setReady(true);
   }, []);
   useEffect(() => {
@@ -299,6 +341,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           assignee,
           reviewedMatchIds,
           receipt: receipt.current,
+          draftId: draftIdentity.current,
         }),
       );
     } catch {
@@ -349,12 +392,6 @@ export function Scan({ manual = false }: { manual?: boolean }) {
     setError("");
     setDuplicate("");
     setMatches([]);
-    if (asset.serial && !asset.serialChecked) {
-      setError(
-        "Check the serial against the device label before finding an asset.",
-      );
-      return;
-    }
     if (!asset.serial && !unknownConfirmed) {
       setError(
         "Confirm the serial is unknown, or enter and check it from the label.",
@@ -432,6 +469,7 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           assignee,
           reviewedMatchIds,
           receipt: receipt.current,
+          draftId: draftIdentity.current,
         }),
       );
     } catch {
@@ -499,6 +537,13 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           Inventory
         </Link>
       </div>
+      {(source?.assistantEnabled || source?.kind === "demo") && (
+        <p className="it-scan-handoff">
+          <Link href="/ask-it" onClick={handoffToAssistant}>
+            Prefer a conversation? Continue with Ask IT
+          </Link>
+        </p>
+      )}
       <p className="entry-step-label">
         Step {progressStep + 1} of 4{" "}
         <span>
@@ -553,7 +598,6 @@ export function Scan({ manual = false }: { manual?: boolean }) {
           exact={matches.length > 0}
           candidates={matches.length ? matches : possibleMatches}
           scanned={asset.serial}
-          reviewed={reviewedMatchIds}
           onReview={setReviewedMatchIds}
           onOpen={clearDraft}
           onRetry={startFresh}
@@ -759,16 +803,14 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               }
             />
             {!asset.serial && (
-              <label className="check unknown-check">
-                <input
-                  type="checkbox"
-                  checked={unknownConfirmed}
-                  onChange={(e) => setUnknownConfirmed(e.target.checked)}
-                />
-                {canWrite
-                  ? "Serial is missing or unreadable. I searched inventory and could not find this device; save as Unknown for later review."
-                  : "Serial is missing or unreadable. Read-only lookup needs a serial or inventory search."}
-              </label>
+              <Button
+                type="button"
+                variant="secondary"
+                aria-pressed={unknownConfirmed}
+                onClick={() => setUnknownConfirmed(!unknownConfirmed)}
+              >
+                {unknownConfirmed ? "Serial marked as unavailable" : "Serial unavailable"}
+              </Button>
             )}
             <div className="sticky-actions">
               <Button disabled={checking || preparing || recognizing}>
@@ -873,7 +915,12 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 </div>
                 <div>
                   <dt>Specifications</dt>
-                  <dd>{display(asset.specs)}</dd>
+                  <dd>
+                    <EntryListDisplay
+                      value={asset.specs}
+                      emptyLabel="Unknown"
+                    />
+                  </dd>
                 </div>
                 <div>
                   <dt>Condition</dt>
@@ -881,7 +928,12 @@ export function Scan({ manual = false }: { manual?: boolean }) {
                 </div>
                 <div>
                   <dt>Accessories</dt>
-                  <dd>{asset.accessories || "Not checked"}</dd>
+                  <dd>
+                    <EntryListDisplay
+                      value={asset.accessories}
+                      emptyLabel="Not checked"
+                    />
+                  </dd>
                 </div>
                 <div>
                   <dt>Purchase cost</dt>
@@ -894,24 +946,6 @@ export function Scan({ manual = false }: { manual?: boolean }) {
               </dl>
             </details>
           </div>
-          <details className="disclosure review-checklist">
-            <summary>Verification checks</summary>
-            <p>
-              {asset.serialChecked ? <Check /> : <FileText />}Serial:{" "}
-              {asset.serialChecked ? "Checked" : "Unknown"}
-            </p>
-            <p>
-              {asset.specsChecked ? <Check /> : <FileText />}Specifications:{" "}
-              {asset.specsChecked ? "Verified" : "Unknown"}
-            </p>
-            <p>
-              {asset.conditionChecked ? <Check /> : <FileText />}Condition:{" "}
-              {asset.conditionChecked ? "Inspected" : "Unknown"}
-            </p>
-            <Notice>
-              Unverified fields stay Unknown. Battery health is not assessed.
-            </Notice>
-          </details>
           <p className="fine-print">
             Only new devices create a record. Save once to confirm.
           </p>

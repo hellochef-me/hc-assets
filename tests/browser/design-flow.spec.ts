@@ -280,8 +280,8 @@ test("edit label rescan requires explicit serial adoption and physical checking 
   await expect(page.getByLabel("Serial number", { exact: true })).toHaveValue(
     "CORRECTED-42",
   );
-  await expect(page.getByLabel("I checked this serial")).not.toBeChecked();
-  await page.getByLabel("I checked this serial").check();
+  await expect(page.getByLabel("I checked this serial")).toHaveCount(0);
+
   await page
     .getByRole("button", { name: "Review changes", exact: true })
     .click();

@@ -352,7 +352,7 @@ test("OCR suggestions keep concurrent manual edits and still require human seria
   await expect(page.getByLabel("Brand", { exact: true })).toHaveValue(
     "Manual brand",
   );
-  await expect(page.getByLabel("I checked this serial")).not.toBeChecked();
+  await expect(page.getByLabel("I checked this serial")).toHaveCount(0);
 });
 
 test("live source enables registration/edit/movement and labels the Google writer accurately", async ({

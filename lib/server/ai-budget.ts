@@ -5,7 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 import { StoreError } from "./store";
 import { ProviderError } from "./provider-http";
-import { hosted, reserveHostedAiRequest } from "./hosted-coordination";
+import { sharedCoordination, reserveHostedAiRequest } from "./hosted-coordination";
 const stateSchema = z
   .object({
     day: z.string(),
@@ -92,7 +92,7 @@ export const budgetedFetch: typeof fetch = async (url, init) => {
         20,
       ),
     };
-    if (hosted()) await reserveHostedAiRequest(limits);
+    if (sharedCoordination()) await reserveHostedAiRequest(limits);
     else await reserveAiRequest(undefined, limits);
   } catch (e) {
     if (e instanceof StoreError)

@@ -4,6 +4,8 @@ import { BlobPreconditionFailedError } from "@vercel/blob";
 import {
   acquireHostedWriter,
   reserveHostedAiRequest,
+  hosted,
+  sharedCoordination,
   type CoordinationStorage,
 } from "../lib/server/hosted-coordination";
 import { guard } from "../lib/server/http";
@@ -11,6 +13,27 @@ import { DirectSheetWriter } from "../lib/server/direct-sheet-writer";
 import { writerMock } from "./helpers/writer";
 import { blankAsset, assetInput, thumbnailPhoto } from "../lib/model";
 import { randomUUID } from "node:crypto";
+
+test("connected local preview shares production coordination without enabling public access", () => {
+  const previous = { vercel: process.env.VERCEL_ENV, shared: process.env.HC_ASSETS_SHARED_COORDINATION };
+  try {
+    delete process.env.VERCEL_ENV;
+    delete process.env.HC_ASSETS_SHARED_COORDINATION;
+    assert.equal(sharedCoordination(), false);
+    process.env.HC_ASSETS_SHARED_COORDINATION = "approved";
+    assert.equal(sharedCoordination(), true);
+    assert.equal(hosted(), false);
+    assert.throws(() => guard(new Request("https://assets.hellochef.me/api/assets")));
+    delete process.env.HC_ASSETS_SHARED_COORDINATION;
+    process.env.VERCEL_ENV = "production";
+    assert.equal(sharedCoordination(), true);
+  } finally {
+    if (previous.vercel === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previous.vercel;
+    if (previous.shared === undefined) delete process.env.HC_ASSETS_SHARED_COORDINATION;
+    else process.env.HC_ASSETS_SHARED_COORDINATION = previous.shared;
+  }
+});
 
 test("label evidence never becomes a thumbnail without an explicitly selected device photo; cover identity persists in Sheet receipts", async () => {
   const label = "data:image/png;base64,bGFiZWw=";

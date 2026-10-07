@@ -33,7 +33,6 @@ export function SerialMatch({
   exact,
   candidates,
   scanned,
-  reviewed,
   onReview,
   onOpen,
   onRetry,
@@ -42,13 +41,11 @@ export function SerialMatch({
   exact: boolean;
   candidates: Asset[];
   scanned: string;
-  reviewed: string[];
   onReview: (ids: string[]) => void;
   onOpen: () => void;
   onRetry: () => void;
   onContinue: () => void;
 }) {
-  const allReviewed = candidates.every((a) => reviewed.includes(a.id));
   return (
     <section className="serial-match-screen" aria-labelledby="match-heading">
       <h1 id="match-heading" tabIndex={-1}>
@@ -63,7 +60,7 @@ export function SerialMatch({
       <p className="screen-intro">
         {exact
           ? "Open its record to update details or change the owner."
-          : "Compare the serial on the physical label before creating another record."}
+          : "A similar serial is already registered. Open it, or continue if this is a different device."}
       </p>
       {candidates.map((a) => (
         <div className="match-candidate" key={a.id}>
@@ -103,18 +100,10 @@ export function SerialMatch({
       ) : (
         <div className="different-device">
           <h2>Different device?</h2>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={allReviewed}
-              onChange={(e) =>
-                onReview(e.target.checked ? candidates.map((a) => a.id) : [])
-              }
-            />
-            I compared these records and checked the physical label. This is a
-            different device.
-          </label>
-          <Button disabled={!allReviewed} onClick={onContinue}>
+          <Button onClick={() => {
+            onReview(candidates.map((a) => a.id));
+            onContinue();
+          }}>
             Continue as new device
           </Button>
           <p className="fine-print">An exact duplicate cannot be created.</p>

@@ -153,7 +153,7 @@ export function fixtures(): Snapshot {
   ) as Asset[];
   return {
     assets,
-    people: demoPeople,
+    people: demoPeople.map((person) => ({ ...person })),
     history: [
       {
         id: "demo-history-1",

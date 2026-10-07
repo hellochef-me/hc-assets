@@ -64,7 +64,7 @@ async function newIntake(page: Page, serial: string) {
     .getByLabel("Asset name", { exact: true })
     .fill("Fictional test laptop");
   await page.getByLabel("Serial number", { exact: true }).fill(serial);
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
@@ -172,7 +172,7 @@ for (const width of [320, 360, 390, 430, 768, 1280, 1440])
         animations: "disabled",
       });
     await page.getByRole("button", { name: "Register new sample" }).click();
-    await page.getByLabel("I checked this serial").check();
+
     await noOverflow(page);
     if (width === 390)
       await page.screenshot({
@@ -204,7 +204,7 @@ test("scan existing serial with case/outer spaces opens record directly, then ed
   await page
     .getByLabel("Serial number", { exact: true })
     .fill("  demo-c02x148  ");
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Open existing asset/ }).click();
   await expect(page).toHaveURL(/assets\/DEMO-001/);
@@ -222,7 +222,7 @@ test("legacy duplicate identity requires record choice and does not merge", asyn
   await mock(page, { legacyDuplicate: true });
   await page.goto("/scan");
   await page.getByRole("button", { name: "Find existing sample" }).click();
-  await page.getByLabel("I checked this serial").check();
+
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "This device is already registered." }),
@@ -379,7 +379,7 @@ test("unknown serial is explicit and lookup preserves meaningful internal charac
   await expect(
     page.getByText("Confirm the serial is unknown,", { exact: false }),
   ).toBeVisible();
-  await page.getByLabel("Serial is missing or unreadable").check();
+  await page.getByRole("button", { name: "Serial unavailable", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
   await expect(
@@ -402,7 +402,7 @@ test("edit collision keeps editable draft", async ({ page }) => {
   await page.goto("/assets/DEMO-002");
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page.getByLabel("Serial number", { exact: true }).fill("DEMO-C02X148");
-  await page.getByLabel("I checked this serial").check();
+
   await page
     .getByRole("button", { name: "Review changes", exact: true })
     .click();

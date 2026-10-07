@@ -54,21 +54,15 @@ test("legacy serial duplicates remain explicit multiple matches", () => {
     2,
   );
 });
-test("unsupported condition/specs cannot be claimed as verified", () => {
-  assert.equal(
-    assetInput.safeParse({ ...intake(), condition: "Good" }).success,
-    false,
-  );
-  assert.equal(
-    assetInput.safeParse({ ...intake(), specs: "16 GB" }).success,
-    false,
-  );
-  assert.equal(assetInput.safeParse(intake()).success, true);
-  assert.equal(
-    assetInput.safeParse({ ...intake(), serialChecked: false }).success,
-    false,
-  );
+test("entered serial, specifications and condition save without inspection attestations", () => {
+  const result = assetInput.parse({ ...intake(), serialChecked: false, specs: "16 GB", condition: "Good" });
+  assert.equal(result.serialChecked, false);
+  assert.equal(result.specsChecked, false);
+  assert.equal(result.conditionChecked, false);
+  assert.equal(result.specs, "16 GB");
+  assert.equal(result.condition, "Good");
 });
+
 test("confirmed creates persist with audit, request receipt and unknown state", () =>
   local(async (s, dir) => {
     const asset = await s.commit("create", {

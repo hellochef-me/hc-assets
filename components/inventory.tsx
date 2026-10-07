@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
+  MessageCircle,
   ScanLine,
   Plus,
   ArrowRight,
@@ -106,6 +107,18 @@ export function Inventory() {
           Registration, edits and movements are disabled; the Sheet is
           unchanged.
         </Notice>
+      )}
+      {(source?.assistantEnabled || source?.kind === "demo") && (
+        <div className="inventory-assistant-entry">
+          <MessageCircle />
+          <div>
+            <strong>Need a hand with your equipment?</strong>
+            <small>Find, register or update with choice-first help.</small>
+          </div>
+          <Link className="button secondary" href="/ask-it">
+            Ask IT <ArrowRight />
+          </Link>
+        </div>
       )}
       <div className="status-tabs" aria-label="Filter by status">
         {["", "Available", "Assigned", "Needs review"].map((s) => (
